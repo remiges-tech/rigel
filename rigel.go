@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	RigelPrefix          = "/remiges/rigel"
-	SchemaDescriptionKey = "description"
-	SchemaNameKey        = "name"
-	SchemaVersionKey     = "version"
-	SchemaFieldsKey      = "fields"
+	rigelPrefix          = "/remiges/rigel"
+	schemaDescriptionKey = "description"
+	schemaNameKey        = "name"
+	schemaVersionKey     = "version"
+	schemaFieldsKey      = "fields"
 )
 
 // Rigel represents a client for Rigel configuration manager server.
@@ -81,28 +81,28 @@ func (r *Rigel) AddSchema(ctx context.Context, schema types.Schema) error {
 	baseSchemaPath := getSchemaPath(schema.Name, schema.Version)
 
 	// Store fields
-	fieldsKey := baseSchemaPath + SchemaFieldsKey
+	fieldsKey := baseSchemaPath + schemaFieldsKey
 	err = r.Storage.Put(ctx, fieldsKey, string(fieldsJson))
 	if err != nil {
 		return fmt.Errorf("failed to store fields: %v", err)
 	}
 
 	// Store description
-	descriptionKey := baseSchemaPath + SchemaDescriptionKey
+	descriptionKey := baseSchemaPath + schemaDescriptionKey
 	err = r.Storage.Put(ctx, descriptionKey, schema.Description)
 	if err != nil {
 		return fmt.Errorf("failed to store description: %v", err)
 	}
 
 	// Store name
-	nameKey := baseSchemaPath + SchemaNameKey
+	nameKey := baseSchemaPath + schemaNameKey
 	err = r.Storage.Put(ctx, nameKey, schema.Name)
 	if err != nil {
 		return fmt.Errorf("failed to store name: %v", err)
 	}
 
 	// Store version
-	versionKey := baseSchemaPath + SchemaVersionKey
+	versionKey := baseSchemaPath + schemaVersionKey
 	err = r.Storage.Put(ctx, versionKey, strconv.Itoa(schema.Version))
 	if err != nil {
 		return fmt.Errorf("failed to store version: %v", err)

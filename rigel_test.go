@@ -165,13 +165,13 @@ func TestAddSchema(t *testing.T) {
 	}
 
 	// Define expected keys and values
-	expectedFieldsKey := getSchemaPath("schemaName", 1) + SchemaFieldsKey
+	expectedFieldsKey := getSchemaPath("schemaName", 1) + schemaFieldsKey
 	expectedFieldsValue := `[{"name":"field1","type":"string"}]`
-	expectedDescriptionKey := getSchemaPath("schemaName", 1) + SchemaDescriptionKey
+	expectedDescriptionKey := getSchemaPath("schemaName", 1) + schemaDescriptionKey
 	expectedDescriptionValue := "description"
-	expectedNameKey := getSchemaPath("schemaName", 1) + SchemaNameKey
+	expectedNameKey := getSchemaPath("schemaName", 1) + schemaNameKey
 	expectedNameValue := "schemaName"
-	expectedVersionKey := getSchemaPath("schemaName", 1) + SchemaVersionKey
+	expectedVersionKey := getSchemaPath("schemaName", 1) + schemaVersionKey
 	expectedVersionValue := "1"
 
 	// Mocked Storage
