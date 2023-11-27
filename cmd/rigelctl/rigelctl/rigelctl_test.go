@@ -6,9 +6,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/remiges-tech/rigel"
+	"github.com/remiges-tech/rigel/mocks"
 	"github.com/spf13/cobra"
-	"github.com/ssd532/rigel"
-	"github.com/ssd532/rigel/mocks"
 )
 
 func TestAddSchemaFromFile(t *testing.T) {

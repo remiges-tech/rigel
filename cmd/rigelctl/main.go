@@ -3,11 +3,11 @@ package main
 import (
 	"log"
 
-	"github.com/ssd532/rigel/cmd/rigelctl/rigelctl"
+	"github.com/remiges-tech/rigel/cmd/rigelctl/rigelctl"
 
+	"github.com/remiges-tech/rigel"
+	"github.com/remiges-tech/rigel/etcd"
 	"github.com/spf13/cobra"
-	"github.com/ssd532/rigel"
-	"github.com/ssd532/rigel/etcd"
 )
 
 func main() {

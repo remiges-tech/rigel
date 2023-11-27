@@ -1,4 +1,4 @@
-module github.com/ssd532/rigel
+module github.com/remiges-tech/rigel
 
 go 1.21.3
 

@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/remiges-tech/rigel"
+	"github.com/remiges-tech/rigel/types"
 	"github.com/spf13/cobra"
-	"github.com/ssd532/rigel"
-	"github.com/ssd532/rigel/types"
 )
 
 func AddSchemaCommand(client *rigel.Rigel, cmd *cobra.Command, args []string) error {

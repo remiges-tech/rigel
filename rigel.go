@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/ssd532/rigel/types"
+	"github.com/remiges-tech/rigel/types"
 )
 
 const (

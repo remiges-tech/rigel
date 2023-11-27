@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ssd532/rigel/etcd"
-	"github.com/ssd532/rigel/mocks"
-	"github.com/ssd532/rigel/types"
+	"github.com/remiges-tech/rigel/etcd"
+	"github.com/remiges-tech/rigel/mocks"
+	"github.com/remiges-tech/rigel/types"
 )
 
 func TestNewRigelClient(t *testing.T) {

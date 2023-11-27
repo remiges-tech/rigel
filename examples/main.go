@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/ssd532/rigel"
-	"github.com/ssd532/rigel/etcd"
+	"github.com/remiges-tech/rigel"
+	"github.com/remiges-tech/rigel/etcd"
 )
 
 type Config struct {

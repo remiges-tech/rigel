@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ssd532/rigel/types"
+	"github.com/remiges-tech/rigel/types"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
