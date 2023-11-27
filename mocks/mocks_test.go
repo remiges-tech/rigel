@@ -3,7 +3,6 @@ package mocks
 import (
 	"context"
 	"fmt"
-	"log"
 )
 
 func ExampleMockStorage_Get() {
@@ -20,12 +19,17 @@ func ExampleMockStorage_Get() {
 	// Call the Get method with "testKey"
 	value, err := mockStorage.Get(context.Background(), "testKey")
 	if err != nil {
-		log.Fatalf("Expected no error, got %v", err)
+		fmt.Printf("Expected no error, got %v\n", err)
+		return
 	}
 
 	// Check the returned value
 	if value != "testValue" {
-		log.Fatalf("Expected value to be 'testValue', got '%s'", value)
+		fmt.Printf("Expected value to be 'testValue', got '%s'\n", value)
+		return
 	}
+
+	// Print the value
+	fmt.Println(value)
 	// Output: testValue
 }
