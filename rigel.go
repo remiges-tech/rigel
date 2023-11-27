@@ -158,7 +158,7 @@ func (r *Rigel) constructConfigMap(ctx context.Context, schemaName string, schem
 		return nil, err
 	}
 	// Construct the configuration map
-	config := make(map[string]interface{})
+	config := make(map[string]any)
 	for _, field := range schema.Fields {
 		// Retrieve the configuration value for the field
 		valueStr, err := r.getConfigValue(ctx, schemaName, schemaVersion, field.Name)
@@ -167,7 +167,7 @@ func (r *Rigel) constructConfigMap(ctx context.Context, schemaName string, schem
 		}
 
 		// Convert the value to the correct type based on the field type
-		var value interface{}
+		var value any
 		switch field.Type {
 		case "int":
 			value, err = strconv.Atoi(valueStr)
