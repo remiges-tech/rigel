@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/remiges-tech/rigel/etcd"
 	"github.com/remiges-tech/rigel/mocks"
@@ -207,6 +208,43 @@ func TestAddSchema(t *testing.T) {
 	err := rigelClient.AddSchema(context.Background(), schema)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
+	}
+}
+
+func TestAddSchemaWithTimeout(t *testing.T) {
+	// Define schema
+	schema := types.Schema{
+		Name:        "schemaName",
+		Version:     1,
+		Description: "description",
+		Fields: []types.Field{
+			{Name: "field1", Type: "string"},
+		},
+	}
+
+	// Mocked Storage
+	mockStorage := &mocks.MockStorage{
+		PutFunc: func(ctx context.Context, key string, value string) error {
+			// Simulate a delay with select to respect context timeout
+			select {
+			case <-time.After(2 * time.Second):
+				return nil // or simulate storage put success
+			case <-ctx.Done():
+				return ctx.Err() // return the error from the context, which will be a timeout
+			}
+		},
+	}
+
+	rigelClient := New(mockStorage)
+
+	// Create a context with a timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	// Call AddSchema with the context
+	err := rigelClient.AddSchema(ctx, schema)
+	if err == nil {
+		t.Errorf("Expected error due to timeout, got nil")
 	}
 }
 func ExampleRigel_LoadConfig() {

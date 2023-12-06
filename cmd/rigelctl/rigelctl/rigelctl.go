@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/remiges-tech/rigel"
 	"github.com/remiges-tech/rigel/types"
@@ -31,8 +32,10 @@ func AddSchemaCommand(client *rigel.Rigel, cmd *cobra.Command, args []string) er
 		return fmt.Errorf("failed to parse schema: %v", err)
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
 	// Call AddSchema
-	err = client.AddSchema(context.Background(), schema)
+	err = client.AddSchema(ctx, schema)
 	if err != nil {
 		return fmt.Errorf("failed to add schema: %v", err)
 	}
