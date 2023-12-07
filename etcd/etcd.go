@@ -39,7 +39,30 @@ func NewEtcdStorage(endpoints []string, config ...clientv3.Config) (*EtcdStorage
 		return nil, fmt.Errorf("failed to create etcd client: %w", err)
 	}
 
-	return &EtcdStorage{Client: cli}, nil
+	storage := &EtcdStorage{Client: cli}
+
+	// Create a context with a timeout for the status check.
+	ctx, cancel := context.WithTimeout(context.Background(), dialTimeout)
+	defer cancel()
+
+	// Perform a status check to ensure we can connect to the etcd server.
+	// The 'StatusCheck' confirms the client is not only initialized but also functionally connected to the etcd cluster.
+	if err := storage.StatusCheck(ctx); err != nil {
+		return nil, fmt.Errorf("failed to connect to etcd: %w", err)
+	}
+
+	return storage, nil
+}
+
+// StatusCheck checks the status of the etcd client.
+// If the function succeeds, we can assume that the connection to the etcd server is working.
+func (e *EtcdStorage) StatusCheck(ctx context.Context) error {
+	_, err := e.Client.MemberList(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to connect to etcd: %w", err)
+	}
+
+	return nil
 }
 
 // Get retrieves a value from etcd based on the provided key.

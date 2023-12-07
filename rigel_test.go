@@ -247,6 +247,21 @@ func TestAddSchemaWithTimeout(t *testing.T) {
 		t.Errorf("Expected error due to timeout, got nil")
 	}
 }
+func TestDefault(t *testing.T) {
+	r, _ := Default()
+
+	if r == nil {
+		t.Error("Expected Rigel instance, got nil")
+	}
+	if r == nil || r.Storage == nil {
+		t.Error("Expected Rigel instance and Storage not to be nil")
+	} else {
+		_, ok := r.Storage.(*etcd.EtcdStorage)
+		if !ok {
+			t.Error("Expected Storage to be of type *EtcdStorage")
+		}
+	}
+}
 func ExampleRigel_LoadConfig() {
 	//// Create a new EtcdStorage instance
 	//etcdStorage, err := etcd.NewEtcdStorage([]string{"localhost:2379"})

@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strconv"
 
+	"github.com/remiges-tech/rigel/etcd"
 	"github.com/remiges-tech/rigel/types"
 )
 
@@ -16,6 +17,7 @@ const (
 	schemaNameKey        = "name"
 	schemaVersionKey     = "version"
 	schemaFieldsKey      = "fields"
+	defaultEtcdEndpoints = "localhost:2379"
 )
 
 // Rigel represents a client for Rigel configuration manager server.
@@ -30,6 +32,18 @@ func New(storage types.Storage) *Rigel {
 	return &Rigel{
 		Storage: storage,
 	}
+}
+
+// Default creates a new instance of Rigel with a default EtcdStorage instance.
+func Default() (*Rigel, error) {
+	etcdStorage, err := etcd.NewEtcdStorage([]string{"localhost:2379"})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create default EtcdStorage: %w", err)
+	}
+
+	return &Rigel{
+		Storage: etcdStorage,
+	}, nil
 }
 
 // LoadConfig retrieves the configuration data associated with the provided configName.
