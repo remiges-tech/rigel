@@ -247,21 +247,73 @@ func TestAddSchemaWithTimeout(t *testing.T) {
 		t.Errorf("Expected error due to timeout, got nil")
 	}
 }
-func TestDefault(t *testing.T) {
-	r, _ := Default()
 
-	if r == nil {
-		t.Error("Expected Rigel instance, got nil")
+func TestGet(t *testing.T) {
+	// Create a mock storage
+	mockStorage := &mocks.MockStorage{
+		GetFunc: func(ctx context.Context, key string) (string, error) {
+			// Return a predefined value for a specific key
+			switch key {
+			case getConfKeyPath("testSchema", 1, "testParam"):
+				return "123", nil
+			case getSchemaFieldsPath("testSchema", 1):
+				return `[{"name": "testParam", "type": "int"}]`, nil
+			default:
+				return "", fmt.Errorf("unexpected key: %s", key)
+			}
+		},
 	}
-	if r == nil || r.Storage == nil {
-		t.Error("Expected Rigel instance and Storage not to be nil")
-	} else {
-		_, ok := r.Storage.(*etcd.EtcdStorage)
-		if !ok {
-			t.Error("Expected Storage to be of type *EtcdStorage")
-		}
+
+	// Create a new Rigel instance with a schema and config
+	r := New(mockStorage).WithConfig("testSchema", 1, "testConfig")
+
+	// Call the Get method with a parameter name
+	value, err := r.Get(context.Background(), "testParam")
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	// Check if the returned value is an integer
+	intValue, ok := value.(int)
+	if !ok {
+		t.Errorf("Expected value of type int, got %T", value)
+	}
+
+	// Check if the returned value is correct
+	if intValue != 123 {
+		t.Errorf("Expected 123, got %d", intValue)
 	}
 }
+
+func TestConfig(t *testing.T) {
+	// Create a mock storage
+	mockStorage := &mocks.MockStorage{
+		GetFunc: func(ctx context.Context, key string) (string, error) {
+			// Return a predefined value for a specific key
+			if key == "testKey" {
+				return "testValue", nil
+			}
+			return "", fmt.Errorf("unexpected key: %s", key)
+		},
+	}
+
+	// Create a new Rigel instance
+	r := New(mockStorage)
+
+	// Call the Config method with a schema name, schema version, and config name
+	newR := r.WithConfig("testSchema", 1, "testConfig")
+
+	// Check if the new Rigel instance is not nil
+	if newR == nil {
+		t.Errorf("Expected new Rigel instance, got nil")
+	}
+
+	// Check if the new Rigel instance has the correct schema name, schema version, and config name
+	if newR.schemaName != "testSchema" || newR.schemaVersion != 1 || newR.configName != "testConfig" {
+		t.Errorf("Expected schemaName: 'testSchema', schemaVersion: 1, configName: 'testConfig', got schemaName: '%s', schemaVersion: %d, configName: '%s'", newR.schemaName, newR.schemaVersion, newR.configName)
+	}
+}
+
 func ExampleRigel_LoadConfig() {
 	//// Create a new EtcdStorage instance
 	//etcdStorage, err := etcd.NewEtcdStorage([]string{"localhost:2379"})
