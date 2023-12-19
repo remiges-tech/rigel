@@ -26,6 +26,7 @@ type Rigel struct {
 	schemaName    string
 	schemaVersion int
 	configName    string
+	Cache         types.Cache
 }
 
 // WithConfig sets the schemaName, schemaVersion, and configName for the Rigel instance and returns a new instance.
@@ -35,6 +36,7 @@ func (r *Rigel) WithConfig(schemaName string, schemaVersion int, configName stri
 		schemaName:    schemaName,
 		schemaVersion: schemaVersion,
 		configName:    configName,
+		Cache:         r.Cache,
 	}
 }
 
@@ -44,6 +46,7 @@ func (r *Rigel) WithConfig(schemaName string, schemaVersion int, configName stri
 func New(storage types.Storage) *Rigel {
 	return &Rigel{
 		Storage: storage,
+		Cache:   NewInMemoryCache(),
 	}
 }
 
@@ -224,32 +227,62 @@ func (r *Rigel) getFieldType(ctx context.Context, paramName string) (string, err
 	return "", fmt.Errorf("field %s not found in schema", paramName)
 }
 
-// Get retrieves a value from the storage based on the provided key.
+// get retrieves a value from the storage based on the provided key.
 // It converts the retrieved value to the correct type based on the field type.
 // If the field type is not "int" or "bool", the value is assumed to be a string.
-func (r *Rigel) Get(ctx context.Context, paramName string) (interface{}, error) {
+// get retrieves a value from the cache or storage and returns it as a string.
+func (r *Rigel) get(ctx context.Context, paramName string) (string, error) {
 	// Construct the key for the parameter
 	key := getConfKeyPath(r.schemaName, r.schemaVersion, paramName)
 
-	// Retrieve the value from the storage
+	// Try to get the value from the cache
+	value, found := r.Cache.Get(key)
+	if found {
+		return value.(string), nil
+	}
+
+	// If the value is not in the cache, retrieve it from the storage
 	valueStr, err := r.Storage.Get(ctx, key)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	// Retrieve the field type
-	fieldType, err := r.getFieldType(ctx, paramName)
+	// Store the value in the cache
+	r.Cache.Set(key, valueStr)
+
+	return valueStr, nil
+}
+
+func (r *Rigel) GetInt(ctx context.Context, paramName string) (int, error) {
+	valueStr, err := r.get(ctx, paramName)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-
-	// Convert the value to the correct type based on the field type
-	value, err := convertToType(valueStr, fieldType)
+	intValue, err := strconv.Atoi(valueStr)
 	if err != nil {
-		return nil, err
+		return 0, fmt.Errorf("failed to convert value to int: %w", err)
 	}
+	return intValue, nil
+}
 
-	return value, nil
+func (r *Rigel) GetBool(ctx context.Context, paramName string) (bool, error) {
+	valueStr, err := r.get(ctx, paramName)
+	if err != nil {
+		return false, err
+	}
+	boolValue, err := strconv.ParseBool(valueStr)
+	if err != nil {
+		return false, fmt.Errorf("failed to convert value to bool: %w", err)
+	}
+	return boolValue, nil
+}
+
+func (r *Rigel) GetString(ctx context.Context, paramName string) (string, error) {
+	valueStr, err := r.get(ctx, paramName)
+	if err != nil {
+		return "", err
+	}
+	return valueStr, nil
 }
 
 // convertToType converts a string value to the specified type.

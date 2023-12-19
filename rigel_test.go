@@ -268,15 +268,9 @@ func TestGet(t *testing.T) {
 	r := New(mockStorage).WithConfig("testSchema", 1, "testConfig")
 
 	// Call the Get method with a parameter name
-	value, err := r.Get(context.Background(), "testParam")
+	intValue, err := r.GetInt(context.Background(), "testParam")
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
-	}
-
-	// Check if the returned value is an integer
-	intValue, ok := value.(int)
-	if !ok {
-		t.Errorf("Expected value of type int, got %T", value)
 	}
 
 	// Check if the returned value is correct

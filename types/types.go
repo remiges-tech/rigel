@@ -54,3 +54,9 @@ type Storage interface {
 	// If an error occurs during the operation, it is returned.
 	Put(ctx context.Context, key string, value string) error
 }
+
+type Cache interface {
+	Get(key string) (value interface{}, found bool)
+	Set(key string, value interface{})
+	Delete(key string)
+}
