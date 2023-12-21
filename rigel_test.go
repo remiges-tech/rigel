@@ -276,6 +276,11 @@ func TestGetInt(t *testing.T) {
 	if intValue != 123 {
 		t.Errorf("Expected 123, got %d", intValue)
 	}
+
+	// Check if the returned value is correct
+	if intValue != 123 {
+		t.Errorf("Expected 123, got %d", intValue)
+	}
 }
 
 func TestConfig(t *testing.T) {
