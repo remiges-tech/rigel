@@ -22,7 +22,20 @@ const (
 
 // Rigel represents a client for Rigel configuration manager server.
 type Rigel struct {
-	Storage types.Storage
+	Storage       types.Storage
+	schemaName    string
+	schemaVersion int
+	Cache         types.Cache
+}
+
+// WithSchema sets the schemaName, schemaVersion, and configName for the Rigel instance and returns a new instance.
+func (r *Rigel) WithSchema(schemaName string, schemaVersion int) *Rigel {
+	return &Rigel{
+		Storage:       r.Storage,
+		schemaName:    schemaName,
+		schemaVersion: schemaVersion,
+		Cache:         r.Cache,
+	}
 }
 
 // New creates a new instance of Rigel with the provided Storage interface.
@@ -31,6 +44,7 @@ type Rigel struct {
 func New(storage types.Storage) *Rigel {
 	return &Rigel{
 		Storage: storage,
+		Cache:   NewInMemoryCache(),
 	}
 }
 
@@ -181,25 +195,125 @@ func (r *Rigel) constructConfigMap(ctx context.Context, schemaName string, schem
 		}
 
 		// Convert the value to the correct type based on the field type
-		var value any
-		switch field.Type {
-		case "int":
-			value, err = strconv.Atoi(valueStr)
-			if err != nil {
-				return nil, fmt.Errorf("failed to convert value to int: %w", err)
-			}
-		case "bool":
-			value, err = strconv.ParseBool(valueStr)
-			if err != nil {
-				return nil, fmt.Errorf("failed to convert value to bool: %w", err)
-			}
-		default:
-			// Assume the value is a string if the field type is not "int" or "bool"
-			value = valueStr
+		// In constructConfigMap:
+		value, err := convertToType(valueStr, field.Type)
+		if err != nil {
+			return nil, err
 		}
 
 		// Add the value to the configuration map
 		config[field.Name] = value
 	}
 	return config, nil
+}
+
+type KeyNotFoundError struct {
+	Key string
+}
+
+func (e *KeyNotFoundError) Error() string {
+	return fmt.Sprintf("key %s not found in config", e.Key)
+}
+
+// Get retrieves a value from the storage based on the provided key.
+// It converts the retrieved value to the correct type based on the field type.
+// If the field type is not "int" or "bool", the value is assumed to be a string.
+// get retrieves a value from the cache or storage and returns it as a string.
+func (r *Rigel) Get(ctx context.Context, configKey string) (string, error) {
+	// Construct the key for the parameter
+	key := getConfKeyPath(r.schemaName, r.schemaVersion, configKey)
+
+	// Try to get the value from the cache
+	value, found := r.Cache.Get(key)
+	if found {
+		return value, nil
+	}
+
+	// If the value is not in the cache, retrieve it from the storage
+	valueStr, err := r.Storage.Get(ctx, key)
+	if err != nil {
+		return "", &KeyNotFoundError{Key: key}
+	}
+
+	// Store the value in the cache
+	r.Cache.Set(key, valueStr)
+
+	return valueStr, nil
+}
+
+func (r *Rigel) GetInt(ctx context.Context, configKey string) (int, error) {
+	valueStr, err := r.Get(ctx, configKey)
+	if err != nil {
+		return 0, err
+	}
+	intValue, err := strconv.Atoi(valueStr)
+	if err != nil {
+		return 0, fmt.Errorf("failed to convert value to int: %w", err)
+	}
+	return intValue, nil
+}
+
+func (r *Rigel) GetBool(ctx context.Context, configKey string) (bool, error) {
+	valueStr, err := r.Get(ctx, configKey)
+	if err != nil {
+		return false, err
+	}
+	boolValue, err := strconv.ParseBool(valueStr)
+	if err != nil {
+		return false, fmt.Errorf("failed to convert value to bool: %w", err)
+	}
+	return boolValue, nil
+}
+
+func (r *Rigel) GetString(ctx context.Context, configKey string) (string, error) {
+	valueStr, err := r.Get(ctx, configKey)
+	if err != nil {
+		return "", err
+	}
+	return valueStr, nil
+}
+
+// convertToType converts a string value to the specified type.
+func convertToType(valueStr string, fieldType string) (interface{}, error) {
+	switch fieldType {
+	case "int":
+		intValue, err := strconv.Atoi(valueStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert value to int: %w", err)
+		}
+		return intValue, nil
+	case "bool":
+		boolValue, err := strconv.ParseBool(valueStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert value to bool: %w", err)
+		}
+		return boolValue, nil
+	default: // "string"
+		return valueStr, nil
+	}
+}
+
+// WatchConfig starts watching for changes to any key in the specified configuration namespace in the storage.
+// When a change is detected, it updates the corresponding key-value pair in the cache.
+// The method takes the schemaName, schemaVersion, and configName
+// to construct the base key for the configuration namespace.
+func (r *Rigel) WatchConfig(ctx context.Context, schemaName string, schemaVersion int) error {
+	// Construct the base key for the configuration
+	baseKey := getConfPath(schemaName, schemaVersion)
+
+	events := make(chan types.Event)
+	if err := r.Storage.Watch(ctx, baseKey, events); err != nil {
+		return err
+	}
+
+	go func() {
+		for event := range events {
+			// Only update keys in the cache that have changed
+			if _, found := r.Cache.Get(event.Key); found {
+				r.Cache.Set(event.Key, event.Value)
+			}
+		}
+	}()
+
+	return nil
 }

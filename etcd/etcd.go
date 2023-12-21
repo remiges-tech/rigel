@@ -96,3 +96,22 @@ func (e *EtcdStorage) Put(ctx context.Context, key string, value string) error {
 	}
 	return nil
 }
+
+// Watch starts watching for changes to a key or a range of keys in etcd and sends the events to the provided channel.
+// If the key is a prefix that matches multiple keys, it watches all those keys.
+// key: The key to watch for changes
+// events is the channel to send events when the key's value changes
+func (e *EtcdStorage) Watch(ctx context.Context, key string, events chan<- types.Event) error {
+	watchChan := e.Client.Watch(ctx, key, clientv3.WithPrefix())
+	go func() {
+		for watchResp := range watchChan {
+			for _, event := range watchResp.Events {
+				events <- types.Event{
+					Key:   string(event.Kv.Key),
+					Value: string(event.Kv.Value),
+				}
+			}
+		}
+	}()
+	return nil
+}

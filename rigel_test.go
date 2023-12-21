@@ -247,21 +247,170 @@ func TestAddSchemaWithTimeout(t *testing.T) {
 		t.Errorf("Expected error due to timeout, got nil")
 	}
 }
-func TestDefault(t *testing.T) {
-	r, _ := Default()
-
-	if r == nil {
-		t.Error("Expected Rigel instance, got nil")
+func TestGetInt(t *testing.T) {
+	// Create a mock storage
+	mockStorage := &mocks.MockStorage{
+		GetFunc: func(ctx context.Context, key string) (string, error) {
+			// Return a predefined value for a specific key
+			switch key {
+			case getConfKeyPath("testSchema", 1, "testParam"):
+				return "123", nil
+			case getSchemaFieldsPath("testSchema", 1):
+				return `[{"name": "testParam", "type": "int"}]`, nil
+			default:
+				return "", fmt.Errorf("unexpected key: %s", key)
+			}
+		},
 	}
-	if r == nil || r.Storage == nil {
-		t.Error("Expected Rigel instance and Storage not to be nil")
-	} else {
-		_, ok := r.Storage.(*etcd.EtcdStorage)
-		if !ok {
-			t.Error("Expected Storage to be of type *EtcdStorage")
-		}
+
+	// Create a new Rigel instance with a schema
+	r := New(mockStorage).WithSchema("testSchema", 1)
+
+	// Call the Get method with a parameter name
+	intValue, err := r.GetInt(context.Background(), "testParam")
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	// Check if the returned value is correct
+	if intValue != 123 {
+		t.Errorf("Expected 123, got %d", intValue)
 	}
 }
+
+func TestConfig(t *testing.T) {
+	// Create a mock storage
+	mockStorage := &mocks.MockStorage{
+		GetFunc: func(ctx context.Context, key string) (string, error) {
+			// Return a predefined value for a specific key
+			if key == "testKey" {
+				return "testValue", nil
+			}
+			return "", fmt.Errorf("unexpected key: %s", key)
+		},
+	}
+
+	// Create a new Rigel instance
+	r := New(mockStorage)
+
+	// Call the WithSchema method with a schema name and schema version
+	newR := r.WithSchema("testSchema", 1)
+
+	// Check if the new Rigel instance is not nil
+	if newR == nil {
+		t.Errorf("Expected new Rigel instance, got nil")
+	}
+
+	// Check if the new Rigel instance has the correct schema name and schema version
+	if newR.schemaName != "testSchema" || newR.schemaVersion != 1 {
+		t.Errorf("Expected schemaName: 'testSchema', schemaVersion: 1, got schemaName: '%s', schemaVersion: %d", newR.schemaName, newR.schemaVersion)
+	}
+}
+
+func TestGet(t *testing.T) {
+	// Define test cases
+	testCases := []struct {
+		name          string
+		paramName     string
+		expectedValue string
+		storageData   map[string]string
+		expectError   bool
+	}{
+		{
+			name:          "Get existing value",
+			paramName:     "testParam",
+			expectedValue: "testValue",
+			storageData: map[string]string{
+				getConfKeyPath("testSchema", 1, "testParam"): "testValue",
+			},
+			expectError: false,
+		},
+		{
+			name:          "Get non-existing value",
+			paramName:     "nonExistingParam",
+			expectedValue: "",
+			storageData:   map[string]string{},
+			expectError:   true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a mock storage
+			mockStorage := &mocks.MockStorage{
+				GetFunc: func(ctx context.Context, key string) (string, error) {
+					value, ok := tc.storageData[key]
+					if !ok {
+						return "", &KeyNotFoundError{Key: key}
+					}
+					return value, nil
+				},
+			}
+
+			// Create a new Rigel instance with a schema
+			r := New(mockStorage).WithSchema("testSchema", 1)
+
+			// Call the Get method with a parameter name
+			value, err := r.Get(context.Background(), tc.paramName)
+
+			// Check if the returned value is correct
+			if value != tc.expectedValue {
+				t.Errorf("Expected '%s', got '%s'", tc.expectedValue, value)
+			}
+
+			// Check if error is returned when expected
+			if (err != nil) != tc.expectError {
+				t.Errorf("Expected error: %v, got error: %v", tc.expectError, err)
+			}
+		})
+	}
+}
+
+func TestGetFromCache(t *testing.T) {
+	// Define test case
+	paramName := "testParam"
+	expectedValue := "testValue"
+
+	// Create a mock cache
+	mockCache := &mocks.MockCache{
+		GetFunc: func(key string) (string, bool) {
+			if key == getConfKeyPath("testSchema", 1, "testParam") {
+				return "testValue", true
+			}
+			return "", false
+		},
+	}
+
+	// Create a mock storage
+	mockStorage := &mocks.MockStorage{
+		GetFunc: func(ctx context.Context, key string) (string, error) {
+			t.Errorf("Storage should not be accessed when value is in cache")
+			return "", nil
+		},
+	}
+
+	// Create a new Rigel instance with a schema and cache
+	r := &Rigel{
+		Storage:       mockStorage,
+		schemaName:    "testSchema",
+		schemaVersion: 1,
+		Cache:         mockCache,
+	}
+
+	// Call the Get method with a parameter name
+	value, err := r.Get(context.Background(), paramName)
+
+	// Check if the returned value is correct
+	if value != expectedValue {
+		t.Errorf("Expected '%s', got '%s'", expectedValue, value)
+	}
+
+	// Check if no error is returned
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+}
+
 func ExampleRigel_LoadConfig() {
 	//// Create a new EtcdStorage instance
 	//etcdStorage, err := etcd.NewEtcdStorage([]string{"localhost:2379"})

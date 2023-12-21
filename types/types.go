@@ -53,4 +53,23 @@ type Storage interface {
 	// If the key already exists, its value is updated; if it does not, a new key-value pair is created.
 	// If an error occurs during the operation, it is returned.
 	Put(ctx context.Context, key string, value string) error
+
+	// Watch watches for changes to a key in the storage and sends the events to the provided channel.
+	// The events includes the key and the updated value.
+	// events is the channel to send events when the key's value changes
+	Watch(ctx context.Context, key string, events chan<- Event) error
+}
+
+// Event represents a change to a key in the storage.
+// Key is the key that was changed
+// Value is the new value of the key
+type Event struct {
+	Key   string
+	Value string
+}
+
+type Cache interface {
+	Get(key string) (value string, found bool)
+	Set(key string, value string)
+	Delete(key string)
 }
