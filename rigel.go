@@ -22,29 +22,25 @@ const (
 
 // Rigel represents a client for Rigel configuration manager server.
 type Rigel struct {
-	Storage       types.Storage
-	schemaName    string
-	schemaVersion int
-	Cache         types.Cache
-}
-
-// WithSchema sets the schemaName, schemaVersion, and configName for the Rigel instance and returns a new instance.
-func (r *Rigel) WithSchema(schemaName string, schemaVersion int) *Rigel {
-	return &Rigel{
-		Storage:       r.Storage,
-		schemaName:    schemaName,
-		schemaVersion: schemaVersion,
-		Cache:         r.Cache,
-	}
+	Storage types.Storage
+	Cache   types.Cache
+	App     string
+	Module  string
+	Version int
+	Config  string
 }
 
 // New creates a new instance of Rigel with the provided Storage interface.
 // The Storage interface is used by Rigel to interact with the underlying storage system.
 // Currently, only etcd is supported as a storage system.
-func New(storage types.Storage) *Rigel {
+func New(storage types.Storage, app string, module string, version int, config string) *Rigel {
 	return &Rigel{
 		Storage: storage,
 		Cache:   NewInMemoryCache(),
+		App:     app,
+		Module:  module,
+		Version: version,
+		Config:  config,
 	}
 }
 
@@ -67,7 +63,7 @@ func Default() (*Rigel, error) {
 // If it is not, an error will be returned.
 // Non-pointer or non-struct types aren't supported due to type safety issues (e.g., unexpected fields in JSON)
 // and modification restrictions, as non-pointer variables can't be updated by json.Unmarshal.
-func (r *Rigel) LoadConfig(ctx context.Context, schemaName string, schemaVersion int, configName string, configStruct any) error {
+func (r *Rigel) LoadConfig(ctx context.Context, configStruct any) error {
 	// Check if configStruct is a pointer to a struct
 	val := reflect.ValueOf(configStruct)
 	if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Struct {
@@ -75,7 +71,7 @@ func (r *Rigel) LoadConfig(ctx context.Context, schemaName string, schemaVersion
 	}
 
 	// Construct the configuration map
-	configMap, err := r.constructConfigMap(ctx, schemaName, schemaVersion)
+	configMap, err := r.constructConfigMap(ctx)
 	if err != nil {
 		return err
 	}
@@ -106,7 +102,7 @@ func (r *Rigel) AddSchema(ctx context.Context, schema types.Schema) error {
 	}
 
 	// Get the base schema path
-	baseSchemaPath := getSchemaPath(schema.Name, schema.Version)
+	baseSchemaPath := getSchemaPath(r.App, r.Module, r.Version)
 
 	// Store fields
 	fieldsKey := baseSchemaPath + schemaFieldsKey
@@ -122,16 +118,9 @@ func (r *Rigel) AddSchema(ctx context.Context, schema types.Schema) error {
 		return fmt.Errorf("failed to store description: %v", err)
 	}
 
-	// Store name
-	nameKey := baseSchemaPath + schemaNameKey
-	err = r.Storage.Put(ctx, nameKey, schema.Name)
-	if err != nil {
-		return fmt.Errorf("failed to store name: %v", err)
-	}
-
 	// Store version
 	versionKey := baseSchemaPath + schemaVersionKey
-	err = r.Storage.Put(ctx, versionKey, strconv.Itoa(schema.Version))
+	err = r.Storage.Put(ctx, versionKey, strconv.Itoa(r.Version))
 	if err != nil {
 		return fmt.Errorf("failed to store version: %v", err)
 	}
@@ -140,9 +129,9 @@ func (r *Rigel) AddSchema(ctx context.Context, schema types.Schema) error {
 }
 
 // getSchema retrieves a schema from the storage based on the provided schemaName and schemaVersion.
-func (r *Rigel) getSchema(ctx context.Context, schemaName string, schemaVersion int) (*types.Schema, error) {
+func (r *Rigel) getSchema(ctx context.Context) (*types.Schema, error) {
 	// Construct the base key for the schema
-	schemaFieldsKey := getSchemaFieldsPath(schemaName, schemaVersion)
+	schemaFieldsKey := getSchemaFieldsPath(r.App, r.Module, r.Version)
 
 	fieldsStr, err := r.Storage.Get(ctx, schemaFieldsKey)
 	if err != nil {
@@ -156,18 +145,16 @@ func (r *Rigel) getSchema(ctx context.Context, schemaName string, schemaVersion 
 
 	// Construct the schema
 	schema := &types.Schema{
-		Name:    schemaName,
-		Version: schemaVersion,
-		Fields:  fields,
+		Fields: fields,
 	}
 
 	return schema, nil
 }
 
 // getConfigValue retrieves a configuration value from Rigel based on the provided schemaName, schemaVersion, and paramName.
-func (r *Rigel) getConfigValue(ctx context.Context, schemaName string, schemaVersion int, paramName string) (string, error) {
+func (r *Rigel) getConfigValue(ctx context.Context, paramName string) (string, error) {
 	// Construct the key for the parameter
-	key := getConfKeyPath(schemaName, schemaVersion, paramName)
+	key := getConfKeyPath(r.App, r.Module, r.Version, r.Config, paramName)
 
 	// Retrieve the parameter value from the storage
 	value, err := r.Storage.Get(ctx, key)
@@ -179,9 +166,10 @@ func (r *Rigel) getConfigValue(ctx context.Context, schemaName string, schemaVer
 }
 
 // constructConfigMap constructs a configuration map based on the provided schema, schemaName, and schemaVersion.
-func (r *Rigel) constructConfigMap(ctx context.Context, schemaName string, schemaVersion int) (map[string]any, error) {
+// constructConfigMap constructs a configuration map based on the Rigel object.
+func (r *Rigel) constructConfigMap(ctx context.Context) (map[string]any, error) {
 	// Retrieve the schema
-	schema, err := r.getSchema(ctx, schemaName, schemaVersion)
+	schema, err := r.getSchema(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -189,13 +177,12 @@ func (r *Rigel) constructConfigMap(ctx context.Context, schemaName string, schem
 	config := make(map[string]any)
 	for _, field := range schema.Fields {
 		// Retrieve the configuration value for the field
-		valueStr, err := r.getConfigValue(ctx, schemaName, schemaVersion, field.Name)
+		valueStr, err := r.getConfigValue(ctx, field.Name)
 		if err != nil {
 			return nil, err
 		}
 
 		// Convert the value to the correct type based on the field type
-		// In constructConfigMap:
 		value, err := convertToType(valueStr, field.Type)
 		if err != nil {
 			return nil, err
@@ -221,7 +208,7 @@ func (e *KeyNotFoundError) Error() string {
 // get retrieves a value from the cache or storage and returns it as a string.
 func (r *Rigel) Get(ctx context.Context, configKey string) (string, error) {
 	// Construct the key for the parameter
-	key := getConfKeyPath(r.schemaName, r.schemaVersion, configKey)
+	key := getConfKeyPath(r.App, r.Module, r.Version, r.Config, configKey)
 
 	// Try to get the value from the cache
 	value, found := r.Cache.Get(key)
@@ -297,9 +284,9 @@ func convertToType(valueStr string, fieldType string) (interface{}, error) {
 // When a change is detected, it updates the corresponding key-value pair in the cache.
 // The method takes the schemaName, schemaVersion, and configName
 // to construct the base key for the configuration namespace.
-func (r *Rigel) WatchConfig(ctx context.Context, schemaName string, schemaVersion int) error {
+func (r *Rigel) WatchConfig(ctx context.Context) error {
 	// Construct the base key for the configuration
-	baseKey := getConfPath(schemaName, schemaVersion)
+	baseKey := getConfPath(r.App, r.Module, r.Version, r.Config)
 
 	events := make(chan types.Event)
 	if err := r.Storage.Watch(ctx, baseKey, events); err != nil {

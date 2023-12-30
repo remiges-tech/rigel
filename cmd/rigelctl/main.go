@@ -17,7 +17,7 @@ func main() {
 		log.Fatalf("Failed to create EtcdStorage: %v", err)
 	}
 	// Create a new Rigel instance
-	rigelClient := rigel.New(etcdStorage)
+	rigelClient := rigel.New(etcdStorage, "testapp", "testmodule", 1, "testconfig")
 
 	// Create the root command
 	rootCmd := &cobra.Command{

@@ -24,7 +24,7 @@ func main() {
 	}
 
 	// Create a new Rigel instance
-	rigelClient := rigel.New(etcdStorage)
+	rigelClient := rigel.New(etcdStorage, "testapp", "testmodule", 1, "testconfig")
 
 	// Define a config struct
 	var config Config
@@ -34,7 +34,7 @@ func main() {
 	defer cancel()
 
 	// Load the config
-	err = rigelClient.LoadConfig(ctx, "appConfig", 1, "appConfig", &config)
+	err = rigelClient.LoadConfig(ctx, &config)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}

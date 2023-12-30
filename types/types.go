@@ -22,8 +22,6 @@ import (
 //	  "description": "Configuration for a web server application"
 //	}
 type Schema struct {
-	Name        string  // Name is the identifier of the schema
-	Version     int     // Version is the version number of the schema
 	Fields      []Field // Fields is a list of fields that the schema contains
 	Description string  // Description provides more information about the schema
 }

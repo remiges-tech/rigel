@@ -5,26 +5,76 @@ import (
 )
 
 func TestGetSchemaFieldsPath(t *testing.T) {
-	schemaName := "testSchema"
-	schemaVersion := 1
-	expectedPath := "/remiges/rigel/schema/testSchema/1/fields"
+	tests := []struct {
+		appName      string
+		moduleName   string
+		version      int
+		expectedPath string
+	}{
+		{"testApp", "testModule", 1, "/remiges/rigel/testApp/testModule/1/fields"},
+	}
 
-	path := getSchemaFieldsPath(schemaName, schemaVersion)
+	for _, tt := range tests {
+		path := getSchemaFieldsPath(tt.appName, tt.moduleName, tt.version)
+		if path != tt.expectedPath {
+			t.Errorf("Expected %s but got %s", tt.expectedPath, path)
+		}
+	}
+}
 
-	if path != expectedPath {
-		t.Errorf("Expected %s but got %s", expectedPath, path)
+func TestGetConfPath(t *testing.T) {
+	tests := []struct {
+		appName      string
+		moduleName   string
+		version      int
+		namedConfig  string
+		expectedPath string
+	}{
+		{"testApp", "testModule", 1, "testConf", "/remiges/rigel/testApp/testModule/1/config/testConf"},
+	}
+
+	for _, tt := range tests {
+		path := getConfPath(tt.appName, tt.moduleName, tt.version, tt.namedConfig)
+		if path != tt.expectedPath {
+			t.Errorf("Expected %s but got %s", tt.expectedPath, path)
+		}
 	}
 }
 
 func TestGetConfKeyPath(t *testing.T) {
-	schemaName := "testSchema"
-	schemaVersion := 1
-	confName := "testConf"
-	expectedPath := "/remiges/rigel/conf/testSchema/1/testConf"
+	tests := []struct {
+		appName      string
+		moduleName   string
+		version      int
+		namedConfig  string
+		confKey      string
+		expectedPath string
+	}{
+		{"testApp", "testModule", 1, "testConf", "testKey", "/remiges/rigel/testApp/testModule/1/config/testConf/testKey"},
+	}
 
-	path := getConfKeyPath(schemaName, schemaVersion, confName)
+	for _, tt := range tests {
+		path := getConfKeyPath(tt.appName, tt.moduleName, tt.version, tt.namedConfig, tt.confKey)
+		if path != tt.expectedPath {
+			t.Errorf("Expected %s but got %s", tt.expectedPath, path)
+		}
+	}
+}
 
-	if path != expectedPath {
-		t.Errorf("Expected %s but got %s", expectedPath, path)
+func TestGetSchemaPath(t *testing.T) {
+	tests := []struct {
+		appName      string
+		moduleName   string
+		version      int
+		expectedPath string
+	}{
+		{"testApp", "testModule", 1, "/remiges/rigel/testApp/testModule/1/"},
+	}
+
+	for _, tt := range tests {
+		path := getSchemaPath(tt.appName, tt.moduleName, tt.version)
+		if path != tt.expectedPath {
+			t.Errorf("Expected %s but got %s", tt.expectedPath, path)
+		}
 	}
 }

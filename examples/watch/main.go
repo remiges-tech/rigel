@@ -17,15 +17,11 @@ func main() {
 		return
 	}
 
-	// Define the schemaName, schemaVersion, and configName
-	schemaName := "testSchema"
-	schemaVersion := 1
-
 	// Create a new Rigel instance
-	r := rigel.New(etcdStorage).WithSchema("testSchema", 1)
+	r := rigel.New(etcdStorage, "testapp", "testmodule", 1, "testconfig")
 
 	// Start watching for changes
-	err = r.WatchConfig(context.Background(), schemaName, schemaVersion)
+	err = r.WatchConfig(context.Background())
 	if err != nil {
 		fmt.Printf("Failed to watch config: %v\n", err)
 		return
