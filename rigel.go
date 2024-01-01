@@ -44,6 +44,13 @@ func New(storage types.Storage, app string, module string, version int, config s
 	}
 }
 
+// NewWithStorage creates a new instance of Rigel with the provided Storage interface.
+// This function is useful when you want to create a Rigel object with a specific storage system,
+// but you don't want to set the other parameters (app, module, version, config) at the time of creation.
+// This is typically used in admin tasks like schema creation where version field is not known while
+// adding a new schema definition. Once Rigel object is constructed using NewWithStorage other
+// required params for admin tasks are supposed to be added using the with-prefixed functions like
+// WithApp, WithModule, etc.
 func NewWithStorage(storage types.Storage) *Rigel {
 	return &Rigel{
 		Storage: storage,
@@ -51,21 +58,29 @@ func NewWithStorage(storage types.Storage) *Rigel {
 	}
 }
 
+// WithApp sets the App field of the Rigel struct and returns the modified Rigel object.
+// This method is typically used for method chaining during Rigel object creation.
 func (r *Rigel) WithApp(app string) *Rigel {
 	r.App = app
 	return r
 }
 
+// WithModule sets the Module field of the Rigel struct and returns the modified Rigel object.
+// This method is typically used for method chaining during Rigel object creation.
 func (r *Rigel) WithModule(module string) *Rigel {
 	r.Module = module
 	return r
 }
 
+// WithVersion sets the Version field of the Rigel struct and returns the modified Rigel object.
+// This method is typically used for method chaining during Rigel object creation.
 func (r *Rigel) WithVersion(version int) *Rigel {
 	r.Version = version
 	return r
 }
 
+// WithConfig sets the Config field of the Rigel struct and returns the modified Rigel object.
+// This method is typically used for method chaining during Rigel object creation.
 func (r *Rigel) WithConfig(config string) *Rigel {
 	r.Config = config
 	return r
