@@ -23,6 +23,7 @@ import (
 //	}
 type Schema struct {
 	Fields      []Field // Fields is a list of fields that the schema contains
+	Version     int     // Version represents the version of the schema
 	Description string  // Description provides more information about the schema
 }
 

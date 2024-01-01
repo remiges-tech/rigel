@@ -166,6 +166,7 @@ func TestAddSchema(t *testing.T) {
 			{Name: "field1", Type: "string"},
 		},
 		Description: "description",
+		Version:     1,
 	}
 
 	// Define expected keys and values
@@ -193,7 +194,7 @@ func TestAddSchema(t *testing.T) {
 		},
 	}
 
-	rigelClient := New(mockStorage, "app", "module", 1, "config")
+	rigelClient := NewWithStorage(mockStorage).WithApp("app").WithModule("module")
 
 	// Call AddSchema
 	err := rigelClient.AddSchema(context.Background(), schema)

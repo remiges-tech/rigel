@@ -44,6 +44,33 @@ func New(storage types.Storage, app string, module string, version int, config s
 	}
 }
 
+func NewWithStorage(storage types.Storage) *Rigel {
+	return &Rigel{
+		Storage: storage,
+		Cache:   NewInMemoryCache(),
+	}
+}
+
+func (r *Rigel) WithApp(app string) *Rigel {
+	r.App = app
+	return r
+}
+
+func (r *Rigel) WithModule(module string) *Rigel {
+	r.Module = module
+	return r
+}
+
+func (r *Rigel) WithVersion(version int) *Rigel {
+	r.Version = version
+	return r
+}
+
+func (r *Rigel) WithConfig(config string) *Rigel {
+	r.Config = config
+	return r
+}
+
 // Default creates a new instance of Rigel with a default EtcdStorage instance.
 func Default() (*Rigel, error) {
 	etcdStorage, err := etcd.NewEtcdStorage([]string{"localhost:2379"})
@@ -101,8 +128,8 @@ func (r *Rigel) AddSchema(ctx context.Context, schema types.Schema) error {
 		return fmt.Errorf("failed to marshal fields: %v", err)
 	}
 
-	// Get the base schema path
-	baseSchemaPath := getSchemaPath(r.App, r.Module, r.Version)
+	// Get the base schema path using the version from the schema
+	baseSchemaPath := getSchemaPath(r.App, r.Module, schema.Version)
 
 	// Store fields
 	fieldsKey := baseSchemaPath + schemaFieldsKey
@@ -116,13 +143,6 @@ func (r *Rigel) AddSchema(ctx context.Context, schema types.Schema) error {
 	err = r.Storage.Put(ctx, descriptionKey, schema.Description)
 	if err != nil {
 		return fmt.Errorf("failed to store description: %v", err)
-	}
-
-	// Store version
-	versionKey := baseSchemaPath + schemaVersionKey
-	err = r.Storage.Put(ctx, versionKey, strconv.Itoa(r.Version))
-	if err != nil {
-		return fmt.Errorf("failed to store version: %v", err)
 	}
 
 	return nil
