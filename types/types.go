@@ -27,6 +27,12 @@ type Schema struct {
 	Description string  // Description provides more information about the schema
 }
 
+type Constraints struct {
+	Min  *int     `json:"min,omitempty"`
+	Max  *int     `json:"max,omitempty"`
+	Enum []string `json:"enum,omitempty"`
+}
+
 // Field represents a single field in a schema. Currently, the only supported types are string, int, and bool.
 //
 // Example:
@@ -36,8 +42,9 @@ type Schema struct {
 //	  "type": "int"
 //	}
 type Field struct {
-	Name string `json:"name"` // Name represents the name of the field (config parameter).
-	Type string `json:"type"` // Type represents the type of the field. Currently, the supported types are "string", "int", and "bool".
+	Name        string       `json:"name"` // Name represents the name of the field (config parameter).
+	Type        string       `json:"type"` // Type represents the type of the field. Currently, the supported types are "string", "int", and "bool".
+	Constraints *Constraints `json:"constraints"`
 }
 
 // Storage is an interface that abstracts the operations for getting and putting data in

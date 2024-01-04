@@ -2,6 +2,8 @@ package rigel
 
 import (
 	"testing"
+
+	"github.com/remiges-tech/rigel/types"
 )
 
 func TestGetSchemaFieldsPath(t *testing.T) {
@@ -76,5 +78,121 @@ func TestGetSchemaPath(t *testing.T) {
 		if path != tt.expectedPath {
 			t.Errorf("Expected %s but got %s", tt.expectedPath, path)
 		}
+	}
+}
+
+func TestValidateValueAgainstConstraints(t *testing.T) {
+	tests := []struct {
+		name     string
+		value    string
+		field    types.Field
+		expected bool
+	}{
+		{
+			name:  "int within range",
+			value: "5",
+			field: types.Field{
+				Type: "int",
+				Constraints: &types.Constraints{
+					Min: new(int),
+					Max: new(int),
+				},
+			},
+			expected: true,
+		},
+		{
+			name:  "int out of range",
+			value: "15",
+			field: types.Field{
+				Type: "int",
+				Constraints: &types.Constraints{
+					Min: new(int),
+					Max: new(int),
+				},
+			},
+			expected: false,
+		},
+		{
+			name:  "float within range",
+			value: "3.5",
+			field: types.Field{
+				Type: "float",
+				Constraints: &types.Constraints{
+					Min: new(int),
+					Max: new(int),
+				},
+			},
+			expected: true,
+		},
+		{
+			name:  "float out of range",
+			value: "5.6",
+			field: types.Field{
+				Type: "float",
+				Constraints: &types.Constraints{
+					Min: new(int),
+					Max: new(int),
+				},
+			},
+			expected: false,
+		},
+		{
+			name:  "string within length",
+			value: "abc",
+			field: types.Field{
+				Type: "string",
+				Constraints: &types.Constraints{
+					Min: new(int),
+					Max: new(int),
+				},
+			},
+			expected: true,
+		},
+		{
+			name:  "string out of length",
+			value: "abcdef",
+			field: types.Field{
+				Type: "string",
+				Constraints: &types.Constraints{
+					Min: new(int),
+					Max: new(int),
+				},
+			},
+			expected: false,
+		},
+		{
+			name:  "enum within range",
+			value: "option1",
+			field: types.Field{
+				Type: "string",
+				Constraints: &types.Constraints{
+					Enum: []string{"option1", "option2", "option3"},
+				},
+			},
+			expected: true,
+		},
+		{
+			name:  "enum out of range",
+			value: "option4",
+			field: types.Field{
+				Type: "string",
+				Constraints: &types.Constraints{
+					Enum: []string{"option1", "option2", "option3"},
+				},
+			},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.field.Constraints.Min != nil && tt.field.Constraints.Max != nil {
+				*tt.field.Constraints.Min = 1
+				*tt.field.Constraints.Max = 5
+			}
+			if got := validateValueAgainstConstraints(tt.value, &tt.field); got != tt.expected {
+				t.Errorf("validateValueAgainstConstraints() = %v, want %v", got, tt.expected)
+			}
+		})
 	}
 }

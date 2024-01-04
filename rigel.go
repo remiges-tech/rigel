@@ -98,6 +98,68 @@ func Default() (*Rigel, error) {
 	}, nil
 }
 
+// KeyExistsInSchema checks if a key exists in the schema.
+func (r *Rigel) KeyExistsInSchema(ctx context.Context, key string) (bool, error) {
+	schema, err := r.getSchema(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to get schema: %w", err)
+	}
+
+	for _, field := range schema.Fields {
+		if field.Name == key {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+// Set sets a value of a config key in the storage.
+func (r *Rigel) Set(ctx context.Context, configKey string, value string) error {
+	// Check if the key exists in the schema
+	exists, err := r.KeyExistsInSchema(ctx, configKey)
+	if err != nil {
+		return fmt.Errorf("failed to check if key exists in schema: %w", err)
+	}
+	if !exists {
+		return &KeyNotFoundError{Key: configKey}
+	}
+
+	// Get the schema
+	schema, err := r.getSchema(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get schema: %w", err)
+	}
+
+	// Find the field in the schema
+	var field *types.Field
+	for _, f := range schema.Fields {
+		if f.Name == configKey {
+			field = &f
+			break
+		}
+	}
+
+	// Validate the value against the field's constraints
+	if !validateValueAgainstConstraints(value, field) {
+		return fmt.Errorf("value does not meet the constraints of the field")
+	}
+
+	// Construct the key for the parameter
+	key := getConfKeyPath(r.App, r.Module, r.Version, r.Config, configKey)
+
+	// Set the value in the storage
+	err = r.Storage.Put(ctx, key, value)
+	if err != nil {
+		return fmt.Errorf("failed to set config value: %w", err)
+	}
+
+	// Update the value in the cache
+	r.Cache.Set(key, value)
+
+	return nil
+}
+
 // LoadConfig retrieves the configuration data associated with the provided configName.
 // It then unmarshals this data into the provided configStruct.
 //
@@ -242,6 +304,15 @@ func (e *KeyNotFoundError) Error() string {
 // If the field type is not "int" or "bool", the value is assumed to be a string.
 // get retrieves a value from the cache or storage and returns it as a string.
 func (r *Rigel) Get(ctx context.Context, configKey string) (string, error) {
+	// Check if the key exists in the schema
+	exists, err := r.KeyExistsInSchema(ctx, configKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to check if key exists in schema: %w", err)
+	}
+	if !exists {
+		return "", &KeyNotFoundError{Key: configKey}
+	}
+
 	// Construct the key for the parameter
 	key := getConfKeyPath(r.App, r.Module, r.Version, r.Config, configKey)
 
@@ -273,6 +344,18 @@ func (r *Rigel) GetInt(ctx context.Context, configKey string) (int, error) {
 		return 0, fmt.Errorf("failed to convert value to int: %w", err)
 	}
 	return intValue, nil
+}
+
+func (r *Rigel) GetFloat(ctx context.Context, configKey string) (float64, error) {
+	valueStr, err := r.Get(ctx, configKey)
+	if err != nil {
+		return 0, err
+	}
+	floatValue, err := strconv.ParseFloat(valueStr, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to convert value to float: %w", err)
+	}
+	return floatValue, nil
 }
 
 func (r *Rigel) GetBool(ctx context.Context, configKey string) (bool, error) {
@@ -310,6 +393,12 @@ func convertToType(valueStr string, fieldType string) (interface{}, error) {
 			return nil, fmt.Errorf("failed to convert value to bool: %w", err)
 		}
 		return boolValue, nil
+	case "float":
+		floatValue, err := strconv.ParseFloat(valueStr, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert value to float: %w", err)
+		}
+		return floatValue, nil
 	default: // "string"
 		return valueStr, nil
 	}

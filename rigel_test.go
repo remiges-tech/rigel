@@ -163,7 +163,11 @@ func TestAddSchema(t *testing.T) {
 	// Define schema
 	schema := types.Schema{
 		Fields: []types.Field{
-			{Name: "field1", Type: "string"},
+			{
+				Name:        "field1",
+				Type:        "string",
+				Constraints: &types.Constraints{}, // Initialize Constraints to an empty struct
+			},
 		},
 		Description: "description",
 		Version:     1,
@@ -171,7 +175,7 @@ func TestAddSchema(t *testing.T) {
 
 	// Define expected keys and values
 	expectedFieldsKey := getSchemaFieldsPath("app", "module", 1)
-	expectedFieldsValue := `[{"name":"field1","type":"string"}]`
+	expectedFieldsValue := `[{"name":"field1","type":"string","constraints":{}}]`
 	expectedDescriptionKey := getSchemaPath("app", "module", 1) + schemaDescriptionKey
 	expectedDescriptionValue := "description"
 
@@ -282,6 +286,7 @@ func TestGet(t *testing.T) {
 			expectedValue: "testValue",
 			storageData: map[string]string{
 				getConfKeyPath("app", "module", 1, "config", "testParam"): "testValue",
+				getSchemaFieldsPath("app", "module", 1):                   `[{"name": "testParam", "type": "string"}]`,
 			},
 			expectError: false,
 		},
@@ -344,6 +349,9 @@ func TestGetFromCache(t *testing.T) {
 	// Create a mock storage
 	mockStorage := &mocks.MockStorage{
 		GetFunc: func(ctx context.Context, key string) (string, error) {
+			if key == getSchemaFieldsPath("app", "module", 1) {
+				return `[{"name": "testParam", "type": "string"}]`, nil
+			}
 			t.Errorf("Storage should not be accessed when value is in cache")
 			return "", nil
 		},
@@ -364,6 +372,104 @@ func TestGetFromCache(t *testing.T) {
 	// Check if no error is returned
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
+	}
+}
+
+func TestKeyExistsInSchema(t *testing.T) {
+	// Mocked Storage
+	mockStorage := &mocks.MockStorage{
+		GetFunc: func(ctx context.Context, key string) (string, error) {
+			// Return a predefined schema JSON string
+			if key == getSchemaFieldsPath("app", "module", 1) {
+				return `[{"name": "key1", "type": "string"}, {"name": "key2", "type": "int"}, {"name": "key3", "type": "bool"}]`, nil
+			}
+			return "", fmt.Errorf("unexpected key: %s", key)
+		},
+	}
+
+	rigelClient := New(mockStorage, "app", "module", 1, "config")
+
+	// Call KeyExistsInSchema
+	exists, err := rigelClient.KeyExistsInSchema(context.Background(), "key1")
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if !exists {
+		t.Errorf("Expected key to exist in schema")
+	}
+
+	// Call KeyExistsInSchema with a non-existing key
+	exists, err = rigelClient.KeyExistsInSchema(context.Background(), "nonExistingKey")
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if exists {
+		t.Errorf("Expected key to not exist in schema")
+	}
+}
+
+func TestSet_KeyNotFoundError(t *testing.T) {
+	// Mocked Storage
+	mockStorage := &mocks.MockStorage{
+		GetFunc: func(ctx context.Context, key string) (string, error) {
+			// Return a predefined schema JSON string with no matching key
+			if key == getSchemaFieldsPath("app", "module", 1) {
+				return `[{"name": "otherKey", "type": "string"}]`, nil
+			}
+			return "", fmt.Errorf("unexpected key: %s", key)
+		},
+	}
+
+	rigelClient := New(mockStorage, "app", "module", 1, "config")
+
+	// Call Set with a non-existing key
+	err := rigelClient.Set(context.Background(), "nonExistingKey", "value")
+	if err == nil {
+		t.Fatalf("Expected error, got nil")
+	}
+
+	// Check if the error is a KeyNotFoundError
+	if _, ok := err.(*KeyNotFoundError); !ok {
+		t.Errorf("Expected error to be a KeyNotFoundError, got %T", err)
+	}
+}
+
+func TestSet_Success(t *testing.T) {
+	// Mocked Storage
+	mockStorage := &mocks.MockStorage{
+		GetFunc: func(ctx context.Context, key string) (string, error) {
+			// Return a predefined schema JSON string with matching key
+			if key == getSchemaFieldsPath("app", "module", 1) {
+				return `[{"name": "existingKey", "type": "string"}]`, nil
+			}
+			return "", fmt.Errorf("unexpected key: %s", key)
+		},
+		PutFunc: func(ctx context.Context, key string, value string) error {
+			// Check if the key and value are correct
+			if key != getConfKeyPath("app", "module", 1, "config", "existingKey") || value != "value" {
+				return fmt.Errorf("unexpected key or value: %s, %s", key, value)
+			}
+			return nil
+		},
+	}
+
+	// Mocked Cache
+	mockCache := &mocks.MockCache{
+		SetFunc: func(key string, value string) {
+			// Check if the key and value are correct
+			if key != getConfKeyPath("app", "module", 1, "config", "existingKey") || value != "value" {
+				t.Errorf("unexpected key or value in cache: %s, %s", key, value)
+			}
+		},
+	}
+
+	rigelClient := New(mockStorage, "app", "module", 1, "config")
+	rigelClient.Cache = mockCache
+
+	// Call Set with an existing key
+	err := rigelClient.Set(context.Background(), "existingKey", "value")
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
 	}
 }
 
