@@ -44,6 +44,7 @@ type Constraints struct {
 type Field struct {
 	Name        string       `json:"name"` // Name represents the name of the field (config parameter).
 	Type        string       `json:"type"` // Type represents the type of the field. Currently, the supported types are "string", "int", and "bool".
+	Description string       `json:"description"`
 	Constraints *Constraints `json:"constraints"`
 }
 

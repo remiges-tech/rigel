@@ -199,7 +199,8 @@ func TestAddSchema(t *testing.T) {
 			{
 				Name:        "field1",
 				Type:        "string",
-				Constraints: &types.Constraints{}, // Initialize Constraints to an empty struct
+				Description: "", // Include empty description to match the actual behavior
+				Constraints: &types.Constraints{},
 			},
 		},
 		Description: "description",
@@ -208,9 +209,12 @@ func TestAddSchema(t *testing.T) {
 
 	// Define expected keys and values
 	expectedFieldsKey := GetSchemaFieldsPath("app", "module", 1)
-	expectedFieldsValue := `[{"name":"field1","type":"string","constraints":{}}]`
-	expectedDescriptionKey := GetSchemaPath("app", "module", 1) + schemaDescriptionKey
+	// Include the description field in the expected JSON
+	expectedFieldsValue := `[{"name":"field1","type":"string","description":"","constraints":{}}]`
+	expectedDescriptionKey := GetSchemaDescriptionPath("app", "module", 1)
 	expectedDescriptionValue := "description"
+	// Define the expected key for the field description
+	expectedFieldDescriptionKey := expectedFieldsKey + "/field1"
 
 	// Mocked Storage
 	mockStorage := &mocks.MockStorage{
@@ -223,6 +227,11 @@ func TestAddSchema(t *testing.T) {
 			case expectedDescriptionKey:
 				if value != expectedDescriptionValue {
 					t.Errorf("Expected description value to be '%s', got '%s'", expectedDescriptionValue, value)
+				}
+			case expectedFieldDescriptionKey:
+				// Expect the field description to be stored
+				if value != "" {
+					t.Errorf("Expected field description value to be empty, got '%s'", value)
 				}
 			default:
 				t.Errorf("Unexpected key: '%s'", key)
