@@ -95,15 +95,19 @@ func main() {
 		WithDependency("etcd", etcdStorage).
 		WithDependency("rigel", rigelClient)
 
+	// routes
+
+	apiV1Group := r.Group("/api/v1/")
+
 	// Config Services
-	s.RegisterRoute(http.MethodGet, "/configget", configsvc.Config_get)
-	s.RegisterRoute(http.MethodGet, "/configlist", configsvc.Config_list)
-	s.RegisterRoute(http.MethodPost, "/configset", configsvc.Config_set)
-	s.RegisterRoute(http.MethodPost, "/configupdate", configsvc.Config_update)
+	s.RegisterRouteWithGroup(apiV1Group, http.MethodGet, "/configget", configsvc.Config_get)
+	s.RegisterRouteWithGroup(apiV1Group, http.MethodGet, "/configlist", configsvc.Config_list)
+	s.RegisterRouteWithGroup(apiV1Group, http.MethodPost, "/configset", configsvc.Config_set)
+	s.RegisterRouteWithGroup(apiV1Group, http.MethodPost, "/configupdate", configsvc.Config_update)
 
 	// Schema Services
-	s.RegisterRoute(http.MethodGet, "/getschema", schemaserv.HandleGetSchemaRequest)
-	s.RegisterRoute(http.MethodGet, "/schemalist", schemaserv.HandleGetSchemaListRequest)
+	s.RegisterRouteWithGroup(apiV1Group, http.MethodGet, "/getschema", schemaserv.HandleGetSchemaRequest)
+	s.RegisterRouteWithGroup(apiV1Group, http.MethodGet, "/schemalist", schemaserv.HandleGetSchemaListRequest)
 
 	r.Run(":" + appConfig.AppServerPort)
 	if err != nil {

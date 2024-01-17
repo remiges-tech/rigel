@@ -72,7 +72,7 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.26.0 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
-	github.com/remiges-tech/alya v0.7.0
+	github.com/remiges-tech/alya v0.8.0
 	github.com/remiges-tech/logharbour v0.11.0
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
