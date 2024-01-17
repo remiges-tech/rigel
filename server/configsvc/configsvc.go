@@ -1,7 +1,6 @@
 package configsvc
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -26,6 +25,13 @@ type getConfigResponse struct {
 	Values      []values `json:"values,omitempty"`
 }
 
+type GetConfigRequestParams struct {
+	App     *string `form:"app"  binding:"required"`
+	Module  *string `form:"module" binding:"required"`
+	Version int     `form:"ver" binding:"required"`
+	Config  *string `form:"config" binding:"required"`
+}
+
 type values struct {
 	Name  string `json:"name,omitempty"`
 	Value string `json:"value,omitempty"`
@@ -43,24 +49,7 @@ func Config_get(c *gin.Context, s *service.Service) {
 	}
 
 	var response getConfigResponse
-	var queryParams utils.GetConfigRequestParams
-	// err := c.ShouldBindQuery(&queryParams)
-	// if err != nil {
-	// 	var errCode string
-	// 	var fld string
-
-	// 	if strings.Contains(fmt.Sprint(err.Error()), "strconv.ParseInt") {
-	// 		errCode = "only_numbers_allowed"
-	// 		fld = "ver"
-	// 	} else {
-	// 		test := strings.Split(err.Error(), "'")
-	// 		fld = strings.Split(test[1], ".")[1]
-	// 		errCode = wscutils.ERRCODE_INVALID_REQUEST
-	// 	}
-	// 	wscutils.SendErrorResponse(c, wscutils.NewResponse(wscutils.ErrorStatus, nil, []wscutils.ErrorMessage{wscutils.BuildErrorMessage(errCode, &fld)}))
-	// 	lh.Debug0().LogActivity("error while binding json request error:", err.Error)
-	// 	return
-	// }
+	var queryParams GetConfigRequestParams
 	if err := c.ShouldBindQuery(&queryParams); err != nil {
 		lh.LogActivity("Error Unmarshalling Query paramaeters to struct:", err)
 		invalidJsonError := wscutils.BuildErrorMessage(wscutils.ErrcodeInvalidJson, nil)
@@ -77,9 +66,9 @@ func Config_get(c *gin.Context, s *service.Service) {
 		return
 	}
 	// set response fields
-	bindGetConfigResponse(&response, &queryParams, getValue)
+	bindGetConfigResponse(&response, queryParams, getValue)
 
-	lh.Log(fmt.Sprintf("Record found: %v", map[string]any{"key with --prefix": keyStr, "value": response}))
+	// lh.Log(fmt.Sprintf("Record found: %v", map[string]any{"key with --prefix": keyStr, "value": response}))
 	// te := make([]*etcdls.Node, 0)
 	// arr, _ := etcdls.BuildTree(te, getValue)
 	wscutils.SendSuccessResponse(c, wscutils.NewSuccessResponse(response))
@@ -116,7 +105,7 @@ func Config_list(c *gin.Context, s *service.Service) {
 }
 
 // bindGetConfigResponse is specifically used in Cinfig_get to bing and set the response
-func bindGetConfigResponse(response *getConfigResponse, queryParams *utils.GetConfigRequestParams, getValue map[string]string) {
+func bindGetConfigResponse(response *getConfigResponse, queryParams GetConfigRequestParams, getValue map[string]string) {
 	response.App = queryParams.App
 	response.Module = queryParams.Module
 	response.Version = &queryParams.Version
@@ -140,6 +129,31 @@ func bindGetConfigResponse(response *getConfigResponse, queryParams *utils.GetCo
 }
 
 func getValsForConfigCreateReqError(err validator.FieldError) []string {
-	validationErrorVals := utils.GetErrorValidationMapByAPIName("config_create")
-	return utils.CommonValidation(validationErrorVals, err)
+	validationErrorVals := GetErrorValidationMapByAPIName("config_create")
+	return CommonValidation(validationErrorVals, err)
+}
+
+// CommonValidation is a generic function which setup standard validation utilizing
+// validator package and Maps the errorVals based on the map parameter and
+// return []errorVals
+func CommonValidation(validationErrorVals map[string]string, err validator.FieldError) []string {
+	var vals []string
+	switch err.Tag() {
+	case "Required":
+		vals = append(vals, "NotProvided")
+	}
+	return vals
+}
+
+func GetErrorValidationMapByAPIName(apiName string) map[string]string {
+	var validationsMap = make(map[string]map[string]string)
+	validationsMap["config_create"] = map[string]string{
+		"Required": "Not_Provided",
+	}
+	// below is one more example ::
+
+	// validationsMap["country_draft_forward"] = map[string]string{
+	// 	"IDmin": "length must be greater than one",
+	// }
+	return validationsMap[apiName]
 }
