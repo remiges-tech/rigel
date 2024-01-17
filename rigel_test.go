@@ -24,7 +24,7 @@ func TestNewRigelClient(t *testing.T) {
 	}
 }
 
-func TestGetSchema(t *testing.T) {
+func TestGetSchemaFields(t *testing.T) {
 	// Mocked Storage
 	mockStorage := &mocks.MockStorage{
 		GetFunc: func(ctx context.Context, key string) (string, error) {
@@ -39,23 +39,56 @@ func TestGetSchema(t *testing.T) {
 	rigelClient := New(mockStorage, "app", "module", 1, "config")
 
 	// Call getSchema
-	schema, err := rigelClient.getSchema(context.Background())
+	schemaFields, err := rigelClient.getSchemaFields(context.Background())
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	// Check if the returned schema is correct
+	if len(schemaFields) != 3 {
+		t.Errorf("Returned schema is incorrect")
+	}
+	if schemaFields[0].Name != "key1" || schemaFields[0].Type != "string" {
+		t.Errorf("Field 1 is incorrect")
+	}
+	if schemaFields[1].Name != "key2" || schemaFields[1].Type != "int" {
+		t.Errorf("Field 2 is incorrect")
+	}
+	if schemaFields[2].Name != "key3" || schemaFields[2].Type != "bool" {
+		t.Errorf("Field 3 is incorrect")
+	}
+}
+
+func TestGetSchema(t *testing.T) {
+	// Mocked Storage
+	mockStorage := &mocks.MockStorage{
+		GetFunc: func(ctx context.Context, key string) (string, error) {
+			// Return a predefined schema JSON string for getSchemaFields
+			if key == getSchemaFieldsPath("app", "module", 1) {
+				return `[{"name": "key1", "type": "string"}, {"name": "key2", "type": "int"}, {"name": "key3", "type": "bool"}]`, nil
+			}
+			// Return a predefined description for GetSchemaDescriptionPath
+			if key == GetSchemaDescriptionPath("app", "module", 1) {
+				return "Test schema description", nil
+			}
+			return "", fmt.Errorf("unexpected key: %s", key)
+		},
+	}
+
+	rigelClient := New(mockStorage, "app", "module", 1, "config")
+
+	// Call GetSchema
+	schema, err := rigelClient.GetSchema(context.Background())
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
 
 	// Check if the returned schema is correct
 	if len(schema.Fields) != 3 {
-		t.Errorf("Returned schema is incorrect")
+		t.Errorf("Expected 3 fields, got %d", len(schema.Fields))
 	}
-	if schema.Fields[0].Name != "key1" || schema.Fields[0].Type != "string" {
-		t.Errorf("Field 1 is incorrect")
-	}
-	if schema.Fields[1].Name != "key2" || schema.Fields[1].Type != "int" {
-		t.Errorf("Field 2 is incorrect")
-	}
-	if schema.Fields[2].Name != "key3" || schema.Fields[2].Type != "bool" {
-		t.Errorf("Field 3 is incorrect")
+	if schema.Description != "Test schema description" {
+		t.Errorf("Expected description to be 'Test schema description', got '%s'", schema.Description)
 	}
 }
 
