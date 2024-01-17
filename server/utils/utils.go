@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"fmt"
+	
 	"strings"
 	"time"
 
@@ -75,7 +75,7 @@ func (n *Node) AddPath(path string, val string) {
 
 func (n *Node) Ls(path string) []*Node {
 	var parts []string
-	fmt.Printf("path inside ls: %v", path)
+	// fmt.Printf("path inside ls: %v", path)
 	parts = strings.Split(path, "/")
 
 	current := n
