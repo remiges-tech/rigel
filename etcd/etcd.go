@@ -84,6 +84,20 @@ func (e *EtcdStorage) Get(ctx context.Context, key string) (string, error) {
 	return value, nil
 }
 
+// GetWithPrefix retrieves all key-value pairs from etcd where the keys start with the provided prefix.
+func (e *EtcdStorage) GetWithPrefix(ctx context.Context, prefix string) (map[string]string, error) {
+	resp, err := e.Client.Get(ctx, prefix, clientv3.WithPrefix())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get keys from etcd: %w", err)
+	}
+	keyVal := make(map[string]string)
+	for _, ev := range resp.Kvs {
+		keyVal[string(ev.Key)] = string(ev.Value)
+	}
+
+	return keyVal, nil
+}
+
 // Put stores a value in etcd at the specified key.
 // The value is also stored as a string. If the key already exists in etcd,
 // its value is updated with the new value. If the key does not exist,
