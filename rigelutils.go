@@ -6,13 +6,13 @@ import (
 	"github.com/remiges-tech/rigel/types"
 )
 
-// getSchemaPath constructs the base key for a schema in etcd based on the provided appName, moduleName and version.
-func getSchemaPath(appName string, moduleName string, version int) string {
+// GetSchemaPath constructs the base key for a schema in etcd based on the provided appName, moduleName and version.
+func GetSchemaPath(appName string, moduleName string, version int) string {
 	return fmt.Sprintf("%s/%s/%s/%d/", rigelPrefix, appName, moduleName, version)
 }
 
-// getSchemaFieldsPath constructs the path for a schema based on the provided appName, moduleName and version.
-func getSchemaFieldsPath(appName string, moduleName string, version int) string {
+// GetSchemaFieldsPath constructs the path for a schema based on the provided appName, moduleName and version.
+func GetSchemaFieldsPath(appName string, moduleName string, version int) string {
 	return fmt.Sprintf("%s/%s/%s/%d/fields", rigelPrefix, appName, moduleName, version)
 }
 
@@ -21,17 +21,17 @@ func GetSchemaDescriptionPath(appName string, moduleName string, version int) st
 	return fmt.Sprintf("%s/%s/%s/%d/description", rigelPrefix, appName, moduleName, version)
 }
 
-// getConfPath constructs the path for a configuration based on the provided appName, moduleName and version.
-func getConfPath(appName string, moduleName string, version int, namedConfig string) string {
+// GetConfPath constructs the path for a configuration based on the provided appName, moduleName and version.
+func GetConfPath(appName string, moduleName string, version int, namedConfig string) string {
 	return fmt.Sprintf("%s/%s/%s/%d/config/%s", rigelPrefix, appName, moduleName, version, namedConfig)
 }
 
-// getConfKeyPath constructs the path for a configuration based on the provided appName, moduleName, version, namedConfig, and confKey.
-func getConfKeyPath(appName string, moduleName string, version int, namedConfig string, confKey string) string {
+// GetConfKeyPath constructs the path for a configuration based on the provided appName, moduleName, version, namedConfig, and confKey.
+func GetConfKeyPath(appName string, moduleName string, version int, namedConfig string, confKey string) string {
 	return fmt.Sprintf("%s/%s/%s/%d/config/%s/%s", rigelPrefix, appName, moduleName, version, namedConfig, confKey)
 }
 
-func validateValueAgainstConstraints(value string, field *types.Field) bool {
+func ValidateValueAgainstConstraints(value string, field *types.Field) bool {
 	// Convert the value to the correct type
 	val, err := convertToType(value, field.Type)
 	if err != nil {

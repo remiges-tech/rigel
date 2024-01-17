@@ -141,12 +141,12 @@ func (r *Rigel) Set(ctx context.Context, configKey string, value string) error {
 	}
 
 	// Validate the value against the field's constraints
-	if !validateValueAgainstConstraints(value, field) {
+	if !ValidateValueAgainstConstraints(value, field) {
 		return fmt.Errorf("value does not meet the constraints of the field")
 	}
 
 	// Construct the key for the parameter
-	key := getConfKeyPath(r.App, r.Module, r.Version, r.Config, configKey)
+	key := GetConfKeyPath(r.App, r.Module, r.Version, r.Config, configKey)
 
 	// Set the value in the storage
 	err = r.Storage.Put(ctx, key, value)
@@ -206,7 +206,7 @@ func (r *Rigel) AddSchema(ctx context.Context, schema types.Schema) error {
 	}
 
 	// Get the base schema path using the version from the schema
-	baseSchemaPath := getSchemaPath(r.App, r.Module, schema.Version)
+	baseSchemaPath := GetSchemaPath(r.App, r.Module, schema.Version)
 
 	// Store fields
 	fieldsKey := baseSchemaPath + schemaFieldsKey
@@ -227,7 +227,7 @@ func (r *Rigel) AddSchema(ctx context.Context, schema types.Schema) error {
 
 // getSchemaFields retrieves the schema fields
 func (r *Rigel) getSchemaFields(ctx context.Context) ([]types.Field, error) {
-	schemaFieldsKey := getSchemaFieldsPath(r.App, r.Module, r.Version)
+	schemaFieldsKey := GetSchemaFieldsPath(r.App, r.Module, r.Version)
 
 	fieldsStr, err := r.Storage.Get(ctx, schemaFieldsKey)
 	if err != nil {
@@ -267,7 +267,7 @@ func (r *Rigel) GetSchema(ctx context.Context) (*types.Schema, error) {
 // getConfigValue retrieves a configuration value from Rigel based on the provided schemaName, schemaVersion, and paramName.
 func (r *Rigel) getConfigValue(ctx context.Context, paramName string) (string, error) {
 	// Construct the key for the parameter
-	key := getConfKeyPath(r.App, r.Module, r.Version, r.Config, paramName)
+	key := GetConfKeyPath(r.App, r.Module, r.Version, r.Config, paramName)
 
 	// Retrieve the parameter value from the storage
 	value, err := r.Storage.Get(ctx, key)
@@ -330,7 +330,7 @@ func (r *Rigel) Get(ctx context.Context, configKey string) (string, error) {
 	}
 
 	// Construct the key for the parameter
-	key := getConfKeyPath(r.App, r.Module, r.Version, r.Config, configKey)
+	key := GetConfKeyPath(r.App, r.Module, r.Version, r.Config, configKey)
 
 	// Try to get the value from the cache
 	value, found := r.Cache.Get(key)
@@ -426,7 +426,7 @@ func convertToType(valueStr string, fieldType string) (interface{}, error) {
 // to construct the base key for the configuration namespace.
 func (r *Rigel) WatchConfig(ctx context.Context) error {
 	// Construct the base key for the configuration
-	baseKey := getConfPath(r.App, r.Module, r.Version, r.Config)
+	baseKey := GetConfPath(r.App, r.Module, r.Version, r.Config)
 
 	events := make(chan types.Event)
 	if err := r.Storage.Watch(ctx, baseKey, events); err != nil {

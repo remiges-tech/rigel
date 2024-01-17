@@ -29,7 +29,7 @@ func TestGetSchemaFields(t *testing.T) {
 	mockStorage := &mocks.MockStorage{
 		GetFunc: func(ctx context.Context, key string) (string, error) {
 			// Return a predefined schema JSON string
-			if key == getSchemaFieldsPath("app", "module", 1) {
+			if key == GetSchemaFieldsPath("app", "module", 1) {
 				return `[{"name": "key1", "type": "string"}, {"name": "key2", "type": "int"}, {"name": "key3", "type": "bool"}]`, nil
 			}
 			return "", fmt.Errorf("unexpected key: %s", key)
@@ -64,7 +64,7 @@ func TestGetSchema(t *testing.T) {
 	mockStorage := &mocks.MockStorage{
 		GetFunc: func(ctx context.Context, key string) (string, error) {
 			// Return a predefined schema JSON string for getSchemaFields
-			if key == getSchemaFieldsPath("app", "module", 1) {
+			if key == GetSchemaFieldsPath("app", "module", 1) {
 				return `[{"name": "key1", "type": "string"}, {"name": "key2", "type": "int"}, {"name": "key3", "type": "bool"}]`, nil
 			}
 			// Return a predefined description for GetSchemaDescriptionPath
@@ -97,7 +97,7 @@ func TestGetConfigValue(t *testing.T) {
 	mockStorage := &mocks.MockStorage{
 		GetFunc: func(ctx context.Context, key string) (string, error) {
 			// Return a predefined config value JSON string
-			if key == getConfKeyPath("app", "module", 1, "config", "key") {
+			if key == GetConfKeyPath("app", "module", 1, "config", "key") {
 				return "value", nil
 			}
 			return "", fmt.Errorf("unexpected key: %s", key)
@@ -123,11 +123,11 @@ func TestConstructConfigMap(t *testing.T) {
 	mockStorage := &mocks.MockStorage{
 		GetFunc: func(ctx context.Context, key string) (string, error) {
 			// Return a predefined schema JSON string for getSchema
-			if key == getSchemaFieldsPath("app", "module", 1) {
+			if key == GetSchemaFieldsPath("app", "module", 1) {
 				return `[{"name": "key", "type": "string"}]`, nil
 			}
 			// Return a predefined config value JSON string
-			if key == getConfKeyPath("app", "module", 1, "config", "key") {
+			if key == GetConfKeyPath("app", "module", 1, "config", "key") {
 				return "value", nil
 			}
 			return "", fmt.Errorf("unexpected key: %s", key)
@@ -153,16 +153,16 @@ func TestLoadConfig(t *testing.T) {
 	mockStorage := &mocks.MockStorage{
 		GetFunc: func(ctx context.Context, key string) (string, error) {
 			// Return a predefined schema JSON string for getSchema
-			if key == getSchemaFieldsPath("app", "module", 1) {
+			if key == GetSchemaFieldsPath("app", "module", 1) {
 				return `[{"name": "key1", "type": "string"}, {"name": "key2", "type": "int"}, {"name": "key3", "type": "bool"}]`, nil
 			}
 			// Return a predefined config value JSON string for getConfigValue
 			switch key {
-			case getConfKeyPath("app", "module", 1, "config", "key1"):
+			case GetConfKeyPath("app", "module", 1, "config", "key1"):
 				return "value1", nil
-			case getConfKeyPath("app", "module", 1, "config", "key2"):
+			case GetConfKeyPath("app", "module", 1, "config", "key2"):
 				return `2`, nil
-			case getConfKeyPath("app", "module", 1, "config", "key3"):
+			case GetConfKeyPath("app", "module", 1, "config", "key3"):
 				return `true`, nil
 			default:
 				return "", fmt.Errorf("unexpected key: %s", key)
@@ -207,9 +207,9 @@ func TestAddSchema(t *testing.T) {
 	}
 
 	// Define expected keys and values
-	expectedFieldsKey := getSchemaFieldsPath("app", "module", 1)
+	expectedFieldsKey := GetSchemaFieldsPath("app", "module", 1)
 	expectedFieldsValue := `[{"name":"field1","type":"string","constraints":{}}]`
-	expectedDescriptionKey := getSchemaPath("app", "module", 1) + schemaDescriptionKey
+	expectedDescriptionKey := GetSchemaPath("app", "module", 1) + schemaDescriptionKey
 	expectedDescriptionValue := "description"
 
 	// Mocked Storage
@@ -281,9 +281,9 @@ func TestGetInt(t *testing.T) {
 		GetFunc: func(ctx context.Context, key string) (string, error) {
 			// Return a predefined value for a specific key
 			switch key {
-			case getConfKeyPath("app", "module", 1, "config", "testParam"):
+			case GetConfKeyPath("app", "module", 1, "config", "testParam"):
 				return "123", nil
-			case getSchemaFieldsPath("app", "module", 1):
+			case GetSchemaFieldsPath("app", "module", 1):
 				return `[{"name": "testParam", "type": "int"}]`, nil
 			default:
 				return "", fmt.Errorf("unexpected key: %s", key)
@@ -318,8 +318,8 @@ func TestGet(t *testing.T) {
 			paramName:     "testParam",
 			expectedValue: "testValue",
 			storageData: map[string]string{
-				getConfKeyPath("app", "module", 1, "config", "testParam"): "testValue",
-				getSchemaFieldsPath("app", "module", 1):                   `[{"name": "testParam", "type": "string"}]`,
+				GetConfKeyPath("app", "module", 1, "config", "testParam"): "testValue",
+				GetSchemaFieldsPath("app", "module", 1):                   `[{"name": "testParam", "type": "string"}]`,
 			},
 			expectError: false,
 		},
@@ -372,7 +372,7 @@ func TestGetFromCache(t *testing.T) {
 	// Create a mock cache
 	mockCache := &mocks.MockCache{
 		GetFunc: func(key string) (string, bool) {
-			if key == getConfKeyPath("app", "module", 1, "config", paramName) {
+			if key == GetConfKeyPath("app", "module", 1, "config", paramName) {
 				return "testValue", true
 			}
 			return "", false
@@ -382,7 +382,7 @@ func TestGetFromCache(t *testing.T) {
 	// Create a mock storage
 	mockStorage := &mocks.MockStorage{
 		GetFunc: func(ctx context.Context, key string) (string, error) {
-			if key == getSchemaFieldsPath("app", "module", 1) {
+			if key == GetSchemaFieldsPath("app", "module", 1) {
 				return `[{"name": "testParam", "type": "string"}]`, nil
 			}
 			t.Errorf("Storage should not be accessed when value is in cache")
@@ -413,7 +413,7 @@ func TestKeyExistsInSchema(t *testing.T) {
 	mockStorage := &mocks.MockStorage{
 		GetFunc: func(ctx context.Context, key string) (string, error) {
 			// Return a predefined schema JSON string
-			if key == getSchemaFieldsPath("app", "module", 1) {
+			if key == GetSchemaFieldsPath("app", "module", 1) {
 				return `[{"name": "key1", "type": "string"}, {"name": "key2", "type": "int"}, {"name": "key3", "type": "bool"}]`, nil
 			}
 			return "", fmt.Errorf("unexpected key: %s", key)
@@ -446,7 +446,7 @@ func TestSet_KeyNotFoundError(t *testing.T) {
 	mockStorage := &mocks.MockStorage{
 		GetFunc: func(ctx context.Context, key string) (string, error) {
 			// Return a predefined schema JSON string with no matching key
-			if key == getSchemaFieldsPath("app", "module", 1) {
+			if key == GetSchemaFieldsPath("app", "module", 1) {
 				return `[{"name": "otherKey", "type": "string"}]`, nil
 			}
 			return "", fmt.Errorf("unexpected key: %s", key)
@@ -472,14 +472,14 @@ func TestSet_Success(t *testing.T) {
 	mockStorage := &mocks.MockStorage{
 		GetFunc: func(ctx context.Context, key string) (string, error) {
 			// Return a predefined schema JSON string with matching key
-			if key == getSchemaFieldsPath("app", "module", 1) {
+			if key == GetSchemaFieldsPath("app", "module", 1) {
 				return `[{"name": "existingKey", "type": "string"}]`, nil
 			}
 			return "", fmt.Errorf("unexpected key: %s", key)
 		},
 		PutFunc: func(ctx context.Context, key string, value string) error {
 			// Check if the key and value are correct
-			if key != getConfKeyPath("app", "module", 1, "config", "existingKey") || value != "value" {
+			if key != GetConfKeyPath("app", "module", 1, "config", "existingKey") || value != "value" {
 				return fmt.Errorf("unexpected key or value: %s, %s", key, value)
 			}
 			return nil
@@ -490,7 +490,7 @@ func TestSet_Success(t *testing.T) {
 	mockCache := &mocks.MockCache{
 		SetFunc: func(key string, value string) {
 			// Check if the key and value are correct
-			if key != getConfKeyPath("app", "module", 1, "config", "existingKey") || value != "value" {
+			if key != GetConfKeyPath("app", "module", 1, "config", "existingKey") || value != "value" {
 				t.Errorf("unexpected key or value in cache: %s, %s", key, value)
 			}
 		},

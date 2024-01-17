@@ -17,7 +17,7 @@ func TestGetSchemaPath(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		path := getSchemaPath(tt.appName, tt.moduleName, tt.version)
+		path := GetSchemaPath(tt.appName, tt.moduleName, tt.version)
 		if path != tt.expectedPath {
 			t.Errorf("Expected %s but got %s", tt.expectedPath, path)
 		}
@@ -35,7 +35,7 @@ func TestGetSchemaFieldsPath(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		path := getSchemaFieldsPath(tt.appName, tt.moduleName, tt.version)
+		path := GetSchemaFieldsPath(tt.appName, tt.moduleName, tt.version)
 		if path != tt.expectedPath {
 			t.Errorf("Expected %s but got %s", tt.expectedPath, path)
 		}
@@ -72,7 +72,7 @@ func TestGetConfPath(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		path := getConfPath(tt.appName, tt.moduleName, tt.version, tt.namedConfig)
+		path := GetConfPath(tt.appName, tt.moduleName, tt.version, tt.namedConfig)
 		if path != tt.expectedPath {
 			t.Errorf("Expected %s but got %s", tt.expectedPath, path)
 		}
@@ -92,7 +92,7 @@ func TestGetConfKeyPath(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		path := getConfKeyPath(tt.appName, tt.moduleName, tt.version, tt.namedConfig, tt.confKey)
+		path := GetConfKeyPath(tt.appName, tt.moduleName, tt.version, tt.namedConfig, tt.confKey)
 		if path != tt.expectedPath {
 			t.Errorf("Expected %s but got %s", tt.expectedPath, path)
 		}
@@ -208,8 +208,8 @@ func TestValidateValueAgainstConstraints(t *testing.T) {
 				*tt.field.Constraints.Min = 1
 				*tt.field.Constraints.Max = 5
 			}
-			if got := validateValueAgainstConstraints(tt.value, &tt.field); got != tt.expected {
-				t.Errorf("validateValueAgainstConstraints() = %v, want %v", got, tt.expected)
+			if got := ValidateValueAgainstConstraints(tt.value, &tt.field); got != tt.expected {
+				t.Errorf("ValidateValueAgainstConstraints() = %v, want %v", got, tt.expected)
 			}
 		})
 	}
