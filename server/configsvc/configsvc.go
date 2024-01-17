@@ -57,7 +57,7 @@ func Config_get(c *gin.Context, s *service.Service) {
 		return
 	}
 
-	keyStr := utils.RIGELPREFIX + "/" + *queryParams.App + "/" + *queryParams.Module + "/" + strconv.Itoa(queryParams.Version) + "/" + *queryParams.Config
+	keyStr := utils.RIGELPREFIX + "/" + *queryParams.App + "/" + *queryParams.Module + "/" + strconv.Itoa(queryParams.Version) + "/config/" + *queryParams.Config
 
 	getValue, err := client.GetWithPrefix(c, keyStr)
 	if err != nil {

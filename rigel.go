@@ -222,6 +222,15 @@ func (r *Rigel) AddSchema(ctx context.Context, schema types.Schema) error {
 		return fmt.Errorf("failed to store description: %v", err)
 	}
 
+	for _, field := range schema.Fields {
+		//store felid description
+		felidDescriptionKey := baseSchemaPath + schemaFieldsKey + "/" + field.Name
+		err = r.Storage.Put(ctx, felidDescriptionKey, field.Description)
+		if err != nil {
+			return fmt.Errorf("failed to store description: %v", err)
+		}
+	}
+
 	return nil
 }
 

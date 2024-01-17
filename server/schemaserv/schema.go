@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -49,13 +48,13 @@ func HandleGetSchemaRequest(c *gin.Context, s *service.Service) {
 	var getSchemareq GetSchemaRequest
 
 	if err := c.ShouldBindQuery(&getSchemareq); err != nil {
-		lh.LogActivity("Error Unmarshalling Query paramaeters to struct:", err)
+		lh.LogActivity("Error Unmarshalling Query paramaeters to struct:", err.Error())
 		invalidJsonError := wscutils.BuildErrorMessage(wscutils.ErrcodeInvalidJson, nil)
 		c.JSON(http.StatusBadRequest, wscutils.NewResponse(wscutils.ErrorStatus, nil, []wscutils.ErrorMessage{invalidJsonError}))
 		return
 	}
 
-	lh.LogActivity("get schema  request parsed %v", map[string]any{"APP": getSchemareq.App, "Module": getSchemareq.Module, "Version": getSchemareq.Version})
+	lh.LogActivity("get schema request parsed :", map[string]any{"APP": getSchemareq.App, "Module": getSchemareq.Module, "Version": getSchemareq.Version})
 
 	schemaName := getSchemareq.App
 	schemaModule := getSchemareq.Module
@@ -90,7 +89,7 @@ func HandleGetSchemaRequest(c *gin.Context, s *service.Service) {
 	// Getting schema details
 	schema, err := client.GetSchema(ctx)
 	if err != nil {
-		lh.LogActivity("error occurred while getting Schema details: ", err)
+		lh.LogActivity("error occurred while getting Schema details: ", map[string]any{"error": err.Error()})
 		wscutils.SendErrorResponse(c, wscutils.NewErrorResponse(SCHEMA_NOT_FOUND))
 		return
 	}
@@ -105,10 +104,10 @@ func HandleGetSchemaRequest(c *gin.Context, s *service.Service) {
 	}
 
 	// Send success response
-	wscutils.SendSuccessResponse(c, &wscutils.Response{Status: "success", Data: response, Messages: []wscutils.ErrorMessage{}})
+	wscutils.SendSuccessResponse(c, &wscutils.Response{Status: wscutils.SuccessStatus, Data: response, Messages: []wscutils.ErrorMessage{}})
 
 	// Log the completion of execution
-	lh.LogActivity("Finished execution of GetSchema", map[string]string{"Timestamp": time.Now().Format("2006-01-02 15:04:05")})
+	lh.Log("Finished execution of GetSchema")
 
 }
 
@@ -167,7 +166,6 @@ type container struct {
 func HandleGetSchemaListRequest(c *gin.Context, s *service.Service) {
 	lh := s.LogHarbour
 	lh.Log("GetSchemaList Request Received")
-
 	// Extracting etcdStorage and rigelTree from service dependency.
 
 	etcd, ok := s.Dependencies["etcd"].(*etcd.EtcdStorage)
@@ -190,7 +188,10 @@ func HandleGetSchemaListRequest(c *gin.Context, s *service.Service) {
 
 	process(rTree, container)
 
-	wscutils.SendSuccessResponse(c, &wscutils.Response{Status: "success", Data: container.responseData, Messages: []wscutils.ErrorMessage{}})
+	// Log the completion of execution
+	lh.Log("Finished execution of GetSchemaList")
+
+	wscutils.SendSuccessResponse(c, &wscutils.Response{Status: wscutils.SuccessStatus, Data: container.responseData, Messages: []wscutils.ErrorMessage{}})
 }
 
 // process generates the required data by working on rigel keys tree rTree
@@ -226,7 +227,7 @@ func workOnVersions(v *utils.Node, rTree *utils.Node, c *container) {
 	vName := v.Name
 	vInt, err := strconv.Atoi(vName)
 	if err != nil {
-		wscutils.NewErrorResponse("invalid version")
+		wscutils.NewErrorResponse(INVALID_VERSION)
 		return
 	}
 
@@ -252,12 +253,12 @@ func getDescr(t *container) string {
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DIALTIMEOUT)
 	defer cancel()
 
-	descr, err := t.etcd.Get(ctx, rigel.GetSchemaDescriptionPath(t.appName, t.moduleName, t.version)) // vInt))
+	descr, err := t.etcd.Get(ctx, rigel.GetSchemaDescriptionPath(t.appName, t.moduleName, t.version))
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
-			wscutils.NewErrorResponse("description get timed out")
+			wscutils.NewErrorResponse(DESCRIPTION_TIMED_OUT)
 		} else {
-			wscutils.NewErrorResponse("description get failed")
+			wscutils.NewErrorResponse(DESCRIPTION_GET_FAILED)
 		}
 		return ""
 	}
