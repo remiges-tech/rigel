@@ -55,7 +55,6 @@ func main() {
 	wscutils.LoadErrorTypes(file)
 	// Router
 	r := gin.Default()
-	r.Use(corsMiddleware())
 
 	// Create a new EtcdStorage instance
 	etcdStorage, err := etcd.NewEtcdStorage([]string{fmt.Sprint(appConfig.DBHost + ":" + appConfig.DBPort)})
@@ -87,7 +86,6 @@ func main() {
 	}
 
 	// Services
-
 	s := service.NewService(r).
 		WithLogHarbour(l).
 		WithDependency("appConfig", appConfig).
@@ -116,15 +114,3 @@ func main() {
 
 }
 
-func corsMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-		c.Next()
-	}
-}
