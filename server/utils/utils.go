@@ -8,16 +8,9 @@ import (
 	"github.com/remiges-tech/alya/wscutils"
 )
 
-type Entity int
 
 const (
-	Country Entity = iota
-	State
-	PostalCode
-)
-
-const (
-	DIALTIMEOUT        = 5 * time.Second
+	DIALTIMEOUT        = 50 * time.Second
 	RIGELPREFIX        = "/remiges/rigel"
 	INVALID_DEPENDENCY = "invalid_dependency"
 )
