@@ -55,6 +55,8 @@ func main() {
 	wscutils.LoadErrorTypes(file)
 	// Router
 	r := gin.Default()
+	// cordMiddleware() definition changes based on build flags
+	// check middleware_dev.go and middleware_non_dev.go
 	r.Use(corsMiddleware())
 
 	// Create a new EtcdStorage instance
@@ -114,17 +116,4 @@ func main() {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 
-}
-
-func corsMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-		c.Next()
-	}
 }
