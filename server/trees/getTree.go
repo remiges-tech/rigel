@@ -69,7 +69,7 @@ func workOnVersions(v *utils.Node, rTree *utils.Node, c *Container) {
 	}
 
 	c.version = vInt
-	configNodes := rTree.Ls(utils.RIGELPREFIX + "/" + c.appName + "/" + c.moduleName + "/" + vName)
+	configNodes := rTree.Ls(utils.RIGELPREFIX + "/" + c.appName + "/" + c.moduleName + "/" + vName + "/" + "config")
 
 	for _, conf := range configNodes {
 		workOnConfigs(conf, rTree, c)
@@ -116,8 +116,8 @@ func getConfigDescr(t *Container) string {
 	// Create a context with a timeout
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DIALTIMEOUT)
 	defer cancel()
-
-	descr, err := t.Etcd.Get(ctx, rigel.GetConfKeyPath(t.appName, t.moduleName, t.version, t.Config, "description")) // vInt))
+	configKeyPath := rigel.GetConfKeyPath(t.appName, t.moduleName, t.version, t.Config, "description")
+	descr, err := t.Etcd.Get(ctx, configKeyPath) // vInt))
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			wscutils.NewErrorResponse("description get timed out")

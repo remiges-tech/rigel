@@ -1,8 +1,6 @@
 package configsvc
 
 import (
-	"fmt"
-
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/remiges-tech/alya/service"
@@ -17,7 +15,7 @@ type configset struct {
 	Ver    int    `json:"ver" validate:"required"`
 	Config string `json:"config" validate:"required"`
 	Key    string `json:"key" validate:"required"`
-	Value  any    `json:"value" validate:"required"`
+	Value  string `json:"value" validate:"required"`
 }
 
 type configupdate struct {
@@ -60,8 +58,7 @@ func Config_set(c *gin.Context, s *service.Service) {
 		return
 	}
 	r.WithApp(configset.App).WithModule(configset.Module).WithVersion(configset.Ver).WithConfig(configset.Config)
-	val := fmt.Sprintf("%#v", configset.Value)
-	err = r.Set(c, configset.Key, val)
+	err = r.Set(c, configset.Key, configset.Value)
 	if err != nil {
 		l.LogActivity("error while setting value in etcd:", err)
 		wscutils.SendErrorResponse(c, wscutils.NewErrorResponse("unable_to_set"))
