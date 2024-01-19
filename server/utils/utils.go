@@ -1,23 +1,16 @@
 package utils
 
 import (
-	"fmt"
+	
 	"strings"
 	"time"
 
 	"github.com/remiges-tech/alya/wscutils"
 )
 
-type Entity int
 
 const (
-	Country Entity = iota
-	State
-	PostalCode
-)
-
-const (
-	DIALTIMEOUT        = 5 * time.Second
+	DIALTIMEOUT        = 50 * time.Second
 	RIGELPREFIX        = "/remiges/rigel"
 	INVALID_DEPENDENCY = "invalid_dependency"
 )
@@ -75,7 +68,7 @@ func (n *Node) AddPath(path string, val string) {
 
 func (n *Node) Ls(path string) []*Node {
 	var parts []string
-	fmt.Printf("path inside ls: %v", path)
+	// fmt.Printf("path inside ls: %v", path)
 	parts = strings.Split(path, "/")
 
 	current := n
