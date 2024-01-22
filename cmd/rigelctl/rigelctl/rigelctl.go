@@ -42,3 +42,17 @@ func AddSchemaCommand(client *rigel.Rigel, cmd *cobra.Command, args []string) er
 
 	return nil
 }
+
+func SetConfigCommand(client *rigel.Rigel, key string, value string) error {
+	// Set the config key and its value using the Set function
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	err := client.Set(ctx, key, value)
+	if err != nil {
+		return fmt.Errorf("Failed to set config: %v", err)
+	}
+
+	fmt.Printf("Config key '%s' set to '%s' successfully\n", key, value)
+	return nil
+}
