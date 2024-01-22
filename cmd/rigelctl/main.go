@@ -66,6 +66,11 @@ func main() {
 		Short: "Add a new schema from a file",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Check if the required flags are provided
+			if app == "" || module == "" {
+				return fmt.Errorf("the 'app' and 'module' flags must be provided")
+			}
+
 			rigelClientPtr, _ := strconv.ParseUint(cmd.Annotations["rigelClient"], 0, 64)
 			rigelClient := (*rigel.Rigel)(unsafe.Pointer(uintptr(rigelClientPtr)))
 
@@ -99,6 +104,11 @@ func main() {
 		Short: "Set a config key and its value",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Check if the required flags are provided
+			if app == "" || module == "" || version == 0 || config == "" {
+				return fmt.Errorf("the 'app', 'module', 'version', and 'config-name' flags must be provided")
+			}
+
 			// Retrieve the Rigel client from the command's annotations
 			rigelClientPtr, _ := strconv.ParseUint(cmd.Annotations["rigelClient"], 0, 64)
 			rigelClient := (*rigel.Rigel)(unsafe.Pointer(uintptr(rigelClientPtr)))
