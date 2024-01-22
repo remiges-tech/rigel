@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"sync"
 
 	"github.com/remiges-tech/rigel/etcd"
 	"github.com/remiges-tech/rigel/types"
@@ -28,6 +29,7 @@ type Rigel struct {
 	Module  string
 	Version int
 	Config  string
+	mu      sync.Mutex
 }
 
 // New creates a new instance of Rigel with the provided Storage interface.
@@ -61,6 +63,8 @@ func NewWithStorage(storage types.Storage) *Rigel {
 // WithApp sets the App field of the Rigel struct and returns the modified Rigel object.
 // This method is typically used for method chaining during Rigel object creation.
 func (r *Rigel) WithApp(app string) *Rigel {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.App = app
 	return r
 }
@@ -68,6 +72,8 @@ func (r *Rigel) WithApp(app string) *Rigel {
 // WithModule sets the Module field of the Rigel struct and returns the modified Rigel object.
 // This method is typically used for method chaining during Rigel object creation.
 func (r *Rigel) WithModule(module string) *Rigel {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.Module = module
 	return r
 }
@@ -75,6 +81,8 @@ func (r *Rigel) WithModule(module string) *Rigel {
 // WithVersion sets the Version field of the Rigel struct and returns the modified Rigel object.
 // This method is typically used for method chaining during Rigel object creation.
 func (r *Rigel) WithVersion(version int) *Rigel {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.Version = version
 	return r
 }
@@ -82,6 +90,8 @@ func (r *Rigel) WithVersion(version int) *Rigel {
 // WithConfig sets the Config field of the Rigel struct and returns the modified Rigel object.
 // This method is typically used for method chaining during Rigel object creation.
 func (r *Rigel) WithConfig(config string) *Rigel {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.Config = config
 	return r
 }
