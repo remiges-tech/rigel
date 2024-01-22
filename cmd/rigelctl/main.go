@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"strconv"
@@ -112,16 +111,10 @@ func main() {
 			// Set the version and config name on the rigelClient
 			rigelClient = rigelClient.WithVersion(version).WithConfig(config)
 
-			// Set the config key and its value using the Set function
+			// Call the SetConfigCommand function in the rigelctl package
 			key := args[0]
 			value := args[1]
-			err := rigelClient.Set(context.Background(), key, value)
-			if err != nil {
-				return fmt.Errorf("Failed to set config: %v", err)
-			}
-
-			fmt.Printf("Config key '%s' set to '%s' successfully\n", key, value)
-			return nil
+			return rigelctl.SetConfigCommand(rigelClient, key, value)
 		},
 	}
 	// Add the 'setConfig' command to the 'config' command
