@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strconv"
@@ -15,7 +16,8 @@ import (
 )
 
 func main() {
-	var etcdEndpoint, app, module string
+	var etcdEndpoint, app, module, config string
+	var version int
 
 	// Create the root command
 	rootCmd := &cobra.Command{
@@ -44,8 +46,14 @@ func main() {
 		},
 	}
 	rootCmd.PersistentFlags().StringVarP(&etcdEndpoint, "etcd-endpoint", "e", "localhost:2379", "etcd endpoint")
-	rootCmd.PersistentFlags().StringVarP(&app, "app", "a", "testapp", "app name")
-	rootCmd.PersistentFlags().StringVarP(&module, "module", "m", "testmodule", "module name")
+	rootCmd.PersistentFlags().StringVarP(&app, "app", "a", "", "app name")
+	rootCmd.PersistentFlags().StringVarP(&module, "module", "m", "", "module name")
+	rootCmd.PersistentFlags().StringVarP(&config, "config", "c", "", "config name")
+	rootCmd.PersistentFlags().IntVarP(&version, "version", "v", 1, "version number")
+
+	//
+	// schema command
+	//
 
 	// Create the 'schema' command
 	schemaCmd := &cobra.Command{
@@ -75,6 +83,52 @@ func main() {
 
 	// Add the 'schema' command to the root command
 	rootCmd.AddCommand(schemaCmd)
+
+	//
+	// config command
+	//
+
+	// Create the 'config' command
+	configCmd := &cobra.Command{
+		Use:   "config",
+		Short: "Manage Rigel configs",
+	}
+
+	// Create the 'set' command under 'config'
+	setConfigCmd := &cobra.Command{
+		Use:   "set [key] [value]",
+		Short: "Set a config key and its value",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Retrieve the Rigel client from the command's annotations
+			rigelClientPtr, _ := strconv.ParseUint(cmd.Annotations["rigelClient"], 0, 64)
+			rigelClient := (*rigel.Rigel)(unsafe.Pointer(uintptr(rigelClientPtr)))
+
+			// Check if the rigelClient is nil
+			if rigelClient == nil {
+				return fmt.Errorf("Failed to initialize Rigel client")
+			}
+
+			// Set the version and config name on the rigelClient
+			rigelClient = rigelClient.WithVersion(version).WithConfig(config)
+
+			// Set the config key and its value using the Set function
+			key := args[0]
+			value := args[1]
+			err := rigelClient.Set(context.Background(), key, value)
+			if err != nil {
+				return fmt.Errorf("Failed to set config: %v", err)
+			}
+
+			fmt.Printf("Config key '%s' set to '%s' successfully\n", key, value)
+			return nil
+		},
+	}
+	// Add the 'setConfig' command to the 'config' command
+	configCmd.AddCommand(setConfigCmd)
+
+	// Add the 'config' command to the root command
+	rootCmd.AddCommand(configCmd)
 
 	// Execute the root command
 	if err := rootCmd.Execute(); err != nil {
