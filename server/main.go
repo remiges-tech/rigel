@@ -57,7 +57,7 @@ func main() {
 	r := gin.Default()
 	// cordMiddleware() definition changes based on build flags
 	// check middleware_dev.go and middleware_non_dev.go
-	r.Use(corsMiddleware())
+	// r.Use(corsMiddleware())
 
 	// Create a new EtcdStorage instance
 	etcdStorage, err := etcd.NewEtcdStorage([]string{fmt.Sprint(appConfig.DBHost + ":" + appConfig.DBPort)})
