@@ -1,7 +1,7 @@
 {
     "info": {
         "_postman_id": "19fbdb2a-294a-4947-89bc-03998e1830e6",
-        "name": "rigel",
+        "name": "rigelwsc",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
         "description": ""
     },
@@ -11,7 +11,7 @@
             "request": {
                 "method": "GET",
                 "url": {
-                    "raw": "http://34.224.86.169/api/v1/configget?app=FinanceApp&module=PaymentGateway&ver=2&config=ProdConfig",
+                    "raw": "http://{{host}}/api/v1/configget?app=FinanceApp&module=PaymentGateway&ver=2&config=ProdConfig",
                     "query": [
                         {
                             "key": "app",
@@ -37,12 +37,9 @@
                         "configget"
                     ],
                     "protocol": "http",
-                    "host": [
-                        "34",
-                        "224",
-                        "86",
-                        "169"
-                    ]
+		    "host": [
+			    "{{host}}"
+		    ]
                 }
             }
         },
@@ -51,7 +48,7 @@
             "request": {
                 "method": "GET",
                 "url": {
-                    "raw": "http://34.224.86.169/api/v1/configlist?app=FinanceApp&module=PaymentGateway&ver=2",
+                    "raw": "http://{{host}}/api/v1/configlist?app=FinanceApp&module=PaymentGateway&ver=2",
                     "query": [
                         {
                             "key": "app",
@@ -73,12 +70,9 @@
                         "configlist"
                     ],
                     "protocol": "http",
-                    "host": [
-                        "34",
-                        "224",
-                        "86",
-                        "169"
-                    ]
+		    "host": [
+			    "{{host}}"
+		    ]
                 }
             }
         },
@@ -87,7 +81,7 @@
             "request": {
                 "method": "GET",
                 "url": {
-                    "raw": "http://34.224.86.169/api/v1/getschema?app=FinanceApp&module=PaymentGateway&ver=2",
+                    "raw": "http://{{host}}/api/v1/getschema?app=FinanceApp&module=PaymentGateway&ver=2",
                     "query": [
                         {
                             "key": "app",
@@ -109,12 +103,9 @@
                         "getschema"
                     ],
                     "protocol": "http",
-                    "host": [
-                        "34",
-                        "224",
-                        "86",
-                        "169"
-                    ]
+		    "host": [
+			    "{{host}}"
+		    ]
                 }
             }
         },
@@ -123,19 +114,16 @@
             "request": {
                 "method": "GET",
                 "url": {
-                    "raw": "http://34.224.86.169/api/v1/schemalist",
+                    "raw": "http://{{host}}/api/v1/schemalist",
                     "path": [
                         "api",
                         "v1",
                         "schemalist"
                     ],
                     "protocol": "http",
-                    "host": [
-                        "34",
-                        "224",
-                        "86",
-                        "169"
-                    ]
+		    "host": [
+			    "{{host}}"
+		    ]
                 }
             }
         },
@@ -144,19 +132,16 @@
             "request": {
                 "method": "POST",
                 "url": {
-                    "raw": "http://34.224.86.169/api/v1/configset",
+                    "raw": "http://{{host}}/api/v1/configset",
                     "path": [
                         "api",
                         "v1",
                         "configset"
                     ],
                     "protocol": "http",
-                    "host": [
-                        "34",
-                        "224",
-                        "86",
-                        "169"
-                    ]
+		    "host": [
+			    "{{host}}"
+		    ]
                 },
                 "body": {
                     "mode": "raw",
@@ -174,19 +159,16 @@
             "request": {
                 "method": "POST",
                 "url": {
-                    "raw": "http://34.224.86.169/api/v1/configupdate",
+                    "raw": "http://{{host}}/api/v1/configupdate",
                     "path": [
                         "api",
                         "v1",
                         "configupdate"
                     ],
                     "protocol": "http",
-                    "host": [
-                        "34",
-                        "224",
-                        "86",
-                        "169"
-                    ]
+		    "host": [
+			    "{{host}}"
+		    ]
                 },
                 "body": {
                     "mode": "raw",
@@ -204,19 +186,16 @@
             "request": {
                 "method": "POST",
                 "url": {
-                    "raw": "http://34.224.86.169/api/v1/configset",
+                    "raw": "http://{{host}}/api/v1/configset",
                     "path": [
                         "api",
                         "v1",
                         "configset"
                     ],
                     "protocol": "http",
-                    "host": [
-                        "34",
-                        "224",
-                        "86",
-                        "169"
-                    ]
+		    "host": [
+			    "{{host}}"
+		    ]
                 },
                 "body": {
                     "mode": "raw",
