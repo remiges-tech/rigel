@@ -64,7 +64,7 @@ func main() {
 
 	if err != nil {
 		log.Fatalf("Failed to create EtcdStorage: %v", err)
-		wscutils.NewErrorResponse("Failed to create EtcdStorage")
+		wscutils.NewErrorResponse("Failed to create EtcdStorage")	
 		return
 	}
 

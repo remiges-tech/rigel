@@ -1,0 +1,184 @@
+{
+    "client": "Thunder Client",
+    "collectionName": "rigel",
+    "dateExported": "2024-01-19T12:03:23.833Z",
+    "version": "1.1",
+    "folders": [],
+    "requests": [
+        {
+            "_id": "d4ccd897-1a5f-4d78-8862-87224301011b",
+            "colId": "12bb0a18-82ed-4106-9714-da0af1bdd42b",
+            "containerId": "",
+            "name": "CONFIG GET",
+            "url": "http://localhost:8090/api/v1/configget?app=FinanceApp&module=PaymentGateway&ver=2&config=ProdConfig",
+            "method": "GET",
+            "sortNum": 100000,
+            "created": "2024-01-17T08:50:46.391Z",
+            "modified": "2024-01-17T19:50:57.466Z",
+            "headers": [],
+            "params": [
+                {
+                    "name": "app",
+                    "value": "FinanceApp",
+                    "isPath": false
+                },
+                {
+                    "name": "module",
+                    "value": "PaymentGateway",
+                    "isPath": false
+                },
+                {
+                    "name": "ver",
+                    "value": "2",
+                    "isPath": false
+                },
+                {
+                    "name": "config",
+                    "value": "ProdConfig",
+                    "isPath": false
+                }
+            ],
+            "tests": []
+        },
+        {
+            "_id": "30a85d15-a981-4f61-ac2c-9ccc6aa31eb0",
+            "colId": "12bb0a18-82ed-4106-9714-da0af1bdd42b",
+            "containerId": "",
+            "name": "CONFIG LIST",
+            "url": "http://localhost:8090/api/v1/configlist?app=FinanceApp&module=PaymentGateway&ver=2",
+            "method": "GET",
+            "sortNum": 110000,
+            "created": "2024-01-17T08:50:46.392Z",
+            "modified": "2024-01-17T19:37:32.429Z",
+            "headers": [],
+            "params": [
+                {
+                    "name": "app",
+                    "value": "FinanceApp",
+                    "isPath": false
+                },
+                {
+                    "name": "module",
+                    "value": "PaymentGateway",
+                    "isPath": false
+                },
+                {
+                    "name": "ver",
+                    "value": "2",
+                    "isPath": false
+                }
+            ],
+            "tests": []
+        },
+        {
+            "_id": "2535e807-964d-41ad-b651-b980161bb602",
+            "colId": "12bb0a18-82ed-4106-9714-da0af1bdd42b",
+            "containerId": "",
+            "name": "SCHEMA GET",
+            "url": "http://localhost:8090/api/v1/getschema?app=FinanceApp&module=PaymentGateway&ver=2",
+            "method": "GET",
+            "sortNum": 130000,
+            "created": "2024-01-17T08:50:46.393Z",
+            "modified": "2024-01-17T19:37:46.411Z",
+            "headers": [],
+            "params": [
+                {
+                    "name": "app",
+                    "value": "FinanceApp",
+                    "isPath": false
+                },
+                {
+                    "name": "module",
+                    "value": "PaymentGateway",
+                    "isPath": false
+                },
+                {
+                    "name": "ver",
+                    "value": "2",
+                    "isPath": false
+                }
+            ],
+            "tests": []
+        },
+        {
+            "_id": "67340380-4305-4b7c-9537-8e063e1dbd4b",
+            "colId": "12bb0a18-82ed-4106-9714-da0af1bdd42b",
+            "containerId": "",
+            "name": "SCHEMA LIST",
+            "url": "http://localhost:8090/api/v1/schemalist",
+            "method": "GET",
+            "sortNum": 140000,
+            "created": "2024-01-17T08:50:46.394Z",
+            "modified": "2024-01-17T19:37:53.852Z",
+            "headers": [],
+            "params": [],
+            "tests": []
+        },
+        {
+            "_id": "43865573-4993-497f-912b-3e3ffe7c276c",
+            "colId": "12bb0a18-82ed-4106-9714-da0af1bdd42b",
+            "containerId": "",
+            "name": "CONFIG SET",
+            "url": "http://localhost:8090/api/v1/configset",
+            "method": "POST",
+            "sortNum": 150000,
+            "created": "2024-01-17T08:50:46.395Z",
+            "modified": "2024-01-18T07:02:39.790Z",
+            "headers": [],
+            "params": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n    \"data\": {\n        \"app\": \"FinanceApp\",\n        \"module\": \"PaymentGateway\",\n        \"ver\": 2,\n        \"config\": \"ProdConfig\",\n        \"key\": \"currencyType\",\n        \"value\": \"USD\"\n    }\n}",
+                "form": []
+            },
+            "tests": []
+        },
+        {
+            "_id": "3787c4c2-0863-4194-849c-2aec20194e56",
+            "colId": "12bb0a18-82ed-4106-9714-da0af1bdd42b",
+            "containerId": "",
+            "name": "CONFIG SET Copy",
+            "url": "http://localhost:8090/api/v1/configset",
+            "method": "POST",
+            "sortNum": 155000,
+            "created": "2024-01-18T06:49:21.530Z",
+            "modified": "2024-01-18T07:03:40.836Z",
+            "headers": [],
+            "params": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n    \"data\": {\n        \"app\": \"FinanceApp\",\n        \"module\": \"PaymentGateway\",\n        \"ver\": 2,\n        \"config\": \"ProdConfig\",\n        \"key\": \"transactionTimeout\",\n        \"value\": \"20\"\n    }\n}",
+                "form": []
+            },
+            "tests": []
+        },
+        {
+            "_id": "4704aced-b195-4e25-bf88-344418f50d89",
+            "colId": "12bb0a18-82ed-4106-9714-da0af1bdd42b",
+            "containerId": "",
+            "name": "CONFIG UPDATE",
+            "url": "http://localhost:8090/api/v1/configupdate",
+            "method": "POST",
+            "sortNum": 160000,
+            "created": "2024-01-17T08:50:46.396Z",
+            "modified": "2024-01-18T05:56:49.906Z",
+            "headers": [],
+            "params": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n    \"data\": {\n        \"app\": \"FinanceApp\",\n        \"module\": \"PaymentGateway\",\n        \"ver\": 2,\n        \"config\": \"ProdConfig\",\n        \"description\": \"Configuration for prod config of the PaymentGateway module in FinanceApp.\",\n        \"values\": [\n            {\n                \"name\": \"transactionTimeout\",\n                \"value\": \"15\"\n            },\n            {\n                \"name\": \"SessionTimeout\",\n                \"value\": \"35.51\"\n            },\n            {\"name\": \"currencyType\", \"value\": \"USD\"}\n        ]\n    }\n}",
+                "form": []
+            },
+            "tests": []
+        }
+    ],
+    "settings": {
+        "headers": [
+            {
+                "name": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "isDisabled": true
+            }
+        ]
+    }
+}

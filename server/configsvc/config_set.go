@@ -32,12 +32,12 @@ type configupdate struct {
 
 func Config_set(c *gin.Context, s *service.Service) {
 	l := s.LogHarbour
-	l.Log("Starting execution of Config_set()")
+	l.Log("Starting execution of Configset()")
 
 	var configset configset
 	err := wscutils.BindJSON(c, &configset)
 	if err != nil {
-		l.LogActivity("error while binding json", err)
+		l.LogActivity("Error while binding json", err)
 		return
 	}
 
