@@ -1,0 +1,233 @@
+{
+    "info": {
+        "_postman_id": "19fbdb2a-294a-4947-89bc-03998e1830e6",
+        "name": "rigel",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "description": ""
+    },
+    "item": [
+        {
+            "name": "CONFIG GET",
+            "request": {
+                "method": "GET",
+                "url": {
+                    "raw": "http://34.224.86.169/api/v1/configget?app=FinanceApp&module=PaymentGateway&ver=2&config=ProdConfig",
+                    "query": [
+                        {
+                            "key": "app",
+                            "value": "FinanceApp"
+                        },
+                        {
+                            "key": "module",
+                            "value": "PaymentGateway"
+                        },
+                        {
+                            "key": "ver",
+                            "value": "2"
+                        },
+                        {
+                            "key": "config",
+                            "value": "ProdConfig"
+                        }
+                    ],
+                    "variable": [],
+                    "path": [
+                        "api",
+                        "v1",
+                        "configget"
+                    ],
+                    "protocol": "http",
+                    "host": [
+                        "34",
+                        "224",
+                        "86",
+                        "169"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "CONFIG LIST",
+            "request": {
+                "method": "GET",
+                "url": {
+                    "raw": "http://34.224.86.169/api/v1/configlist?app=FinanceApp&module=PaymentGateway&ver=2",
+                    "query": [
+                        {
+                            "key": "app",
+                            "value": "FinanceApp"
+                        },
+                        {
+                            "key": "module",
+                            "value": "PaymentGateway"
+                        },
+                        {
+                            "key": "ver",
+                            "value": "2"
+                        }
+                    ],
+                    "variable": [],
+                    "path": [
+                        "api",
+                        "v1",
+                        "configlist"
+                    ],
+                    "protocol": "http",
+                    "host": [
+                        "34",
+                        "224",
+                        "86",
+                        "169"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "SCHEMA GET",
+            "request": {
+                "method": "GET",
+                "url": {
+                    "raw": "http://34.224.86.169/api/v1/getschema?app=FinanceApp&module=PaymentGateway&ver=2",
+                    "query": [
+                        {
+                            "key": "app",
+                            "value": "FinanceApp"
+                        },
+                        {
+                            "key": "module",
+                            "value": "PaymentGateway"
+                        },
+                        {
+                            "key": "ver",
+                            "value": "2"
+                        }
+                    ],
+                    "variable": [],
+                    "path": [
+                        "api",
+                        "v1",
+                        "getschema"
+                    ],
+                    "protocol": "http",
+                    "host": [
+                        "34",
+                        "224",
+                        "86",
+                        "169"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "SCHEMA LIST",
+            "request": {
+                "method": "GET",
+                "url": {
+                    "raw": "http://34.224.86.169/api/v1/schemalist",
+                    "path": [
+                        "api",
+                        "v1",
+                        "schemalist"
+                    ],
+                    "protocol": "http",
+                    "host": [
+                        "34",
+                        "224",
+                        "86",
+                        "169"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "CONFIG SET",
+            "request": {
+                "method": "POST",
+                "url": {
+                    "raw": "http://34.224.86.169/api/v1/configset",
+                    "path": [
+                        "api",
+                        "v1",
+                        "configset"
+                    ],
+                    "protocol": "http",
+                    "host": [
+                        "34",
+                        "224",
+                        "86",
+                        "169"
+                    ]
+                },
+                "body": {
+                    "mode": "raw",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    },
+                    "raw": "{\n    \"data\": {\n        \"app\": \"FinanceApp\",\n        \"module\": \"PaymentGateway\",\n        \"ver\": 2,\n        \"config\": \"ProdConfig\",\n        \"key\": \"currencyType\",\n        \"value\": \"USD\"\n    }\n}"
+                }
+            }
+        },
+        {
+            "name": "CONFIG UPDATE",
+            "request": {
+                "method": "POST",
+                "url": {
+                    "raw": "http://34.224.86.169/api/v1/configupdate",
+                    "path": [
+                        "api",
+                        "v1",
+                        "configupdate"
+                    ],
+                    "protocol": "http",
+                    "host": [
+                        "34",
+                        "224",
+                        "86",
+                        "169"
+                    ]
+                },
+                "body": {
+                    "mode": "raw",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    },
+                    "raw": "{\n    \"data\": {\n        \"app\": \"FinanceApp\",\n        \"module\": \"PaymentGateway\",\n        \"ver\": 2,\n        \"config\": \"ProdConfig\",\n        \"description\": \"Configuration for prod config of the PaymentGateway module in FinanceApp.\",\n        \"values\": [\n            {\n                \"name\": \"transactionTimeout\",\n                \"value\": \"15\"\n            },\n            {\n                \"name\": \"SessionTimeout\",\n                \"value\": \"35.51\"\n            },\n            {\"name\": \"currencyType\", \"value\": \"USD\"}\n        ]\n    }\n}"
+                }
+            }
+        },
+        {
+            "name": "CONFIG SET Copy",
+            "request": {
+                "method": "POST",
+                "url": {
+                    "raw": "http://34.224.86.169/api/v1/configset",
+                    "path": [
+                        "api",
+                        "v1",
+                        "configset"
+                    ],
+                    "protocol": "http",
+                    "host": [
+                        "34",
+                        "224",
+                        "86",
+                        "169"
+                    ]
+                },
+                "body": {
+                    "mode": "raw",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    },
+                    "raw": "{\n    \"data\": {\n        \"app\": \"FinanceApp\",\n        \"module\": \"PaymentGateway\",\n        \"ver\": 2,\n        \"config\": \"ProdConfig\",\n        \"key\": \"transactionTimeout\",\n        \"value\": \"20\"\n    }\n}"
+                }
+            }
+        }
+    ]
+}
