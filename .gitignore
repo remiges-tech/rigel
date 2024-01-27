@@ -22,3 +22,6 @@ bin
 
 # vim
 *.swp
+
+# dist directory that contains built artifacts
+dist
