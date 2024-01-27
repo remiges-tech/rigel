@@ -56,3 +56,16 @@ func SetConfigCommand(client *rigel.Rigel, key string, value string) error {
 	fmt.Printf("Config key '%s' set to '%s' successfully\n", key, value)
 	return nil
 }
+
+func GetConfigCommand(client *rigel.Rigel, key string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	value, err := client.Get(ctx, key)
+	if err != nil {
+		return fmt.Errorf("Failed to get config: %v", err)
+	}
+
+	fmt.Printf("%s\n", value)
+	return nil
+}

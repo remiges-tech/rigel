@@ -25,3 +25,4 @@ bin
 
 # dist directory that contains built artifacts
 dist
+out

@@ -48,7 +48,7 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(&app, "app", "a", "", "app name")
 	rootCmd.PersistentFlags().StringVarP(&module, "module", "m", "", "module name")
 	rootCmd.PersistentFlags().StringVarP(&config, "config", "c", "", "config name")
-	rootCmd.PersistentFlags().IntVarP(&version, "version", "v", 1, "version number")
+	rootCmd.PersistentFlags().IntVarP(&version, "version", "v", 0, "version number")
 
 	//
 	// schema command
@@ -106,7 +106,7 @@ func main() {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Check if the required flags are provided
 			if app == "" || module == "" || version == 0 || config == "" {
-				return fmt.Errorf("the 'app', 'module', 'version', and 'config-name' flags must be provided")
+				return fmt.Errorf("the 'app', 'module', 'version', and 'config' flags must be provided")
 			}
 
 			// Retrieve the Rigel client from the command's annotations
@@ -129,6 +129,38 @@ func main() {
 	}
 	// Add the 'setConfig' command to the 'config' command
 	configCmd.AddCommand(setConfigCmd)
+
+	// Create the 'get' command under 'config'
+	getConfigCmd := &cobra.Command{
+		Use:   "get [key]",
+		Short: "Get a config key value",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Check if the required flags are provided
+			if app == "" || module == "" || version == 0 || config == "" {
+				return fmt.Errorf("the 'app', 'module', 'version', and 'config' flags must be provided")
+			}
+
+			// Retrieve the Rigel client from the command's annotations
+			rigelClientPtr, _ := strconv.ParseUint(cmd.Annotations["rigelClient"], 0, 64)
+			rigelClient := (*rigel.Rigel)(unsafe.Pointer(uintptr(rigelClientPtr)))
+
+			// Check if the rigelClient is nil
+			if rigelClient == nil {
+				return fmt.Errorf("Failed to initialize Rigel client")
+			}
+
+			// Set the version and config name on the rigelClient
+			rigelClient = rigelClient.WithVersion(version).WithConfig(config)
+
+			// Call the GetConfigCommand function in the rigelctl package
+			key := args[0]
+			return rigelctl.GetConfigCommand(rigelClient, key)
+		},
+	}
+
+	// Add the 'getConfig' command to the 'config' command
+	configCmd.AddCommand(getConfigCmd)
 
 	// Add the 'config' command to the root command
 	rootCmd.AddCommand(configCmd)
