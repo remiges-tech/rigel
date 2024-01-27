@@ -1,7 +1,7 @@
 package configsvc
 
 import (
-	"net/http"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -52,8 +52,7 @@ func Config_get(c *gin.Context, s *service.Service) {
 	var queryParams GetConfigRequestParams
 	if err := c.ShouldBindQuery(&queryParams); err != nil {
 		lh.LogActivity("Error Unmarshalling Query paramaeters to struct:", err)
-		invalidJsonError := wscutils.BuildErrorMessage(wscutils.ErrcodeInvalidJson, nil)
-		c.JSON(http.StatusBadRequest, wscutils.NewResponse(wscutils.ErrorStatus, nil, []wscutils.ErrorMessage{invalidJsonError}))
+		wscutils.SendErrorResponse(c, wscutils.NewResponse(wscutils.ErrorStatus, nil, []wscutils.ErrorMessage{wscutils.BuildErrorMessage(wscutils.ErrcodeInvalidJson, nil)}))
 		return
 	}
 
@@ -66,11 +65,9 @@ func Config_get(c *gin.Context, s *service.Service) {
 		return
 	}
 	// set response fields
-	bindGetConfigResponse(&response, queryParams, getValue)
+	bindGetConfigResponse(&response, &getValue)
 
-	// lh.Log(fmt.Sprintf("Record found: %v", map[string]any{"key with --prefix": keyStr, "value": response}))
-	// te := make([]*etcdls.Node, 0)
-	// arr, _ := etcdls.BuildTree(te, getValue)
+	lh.Log(fmt.Sprintf("Record found: %v", map[string]any{"key with --prefix": keyStr, "value": response}))
 	wscutils.SendSuccessResponse(c, wscutils.NewSuccessResponse(response))
 }
 
@@ -105,17 +102,18 @@ func Config_list(c *gin.Context, s *service.Service) {
 }
 
 // bindGetConfigResponse is specifically used in Cinfig_get to bing and set the response
-func bindGetConfigResponse(response *getConfigResponse, queryParams GetConfigRequestParams, getValue map[string]string) {
-	response.App = queryParams.App
-	response.Module = queryParams.Module
-	response.Version = &queryParams.Version
-	response.Config = queryParams.Config
-	for key, vals := range getValue {
+func bindGetConfigResponse(response *getConfigResponse, getValue *map[string]string) {
+	for key, vals := range *getValue {
 
 		arry := strings.Split(key, "/")
 		keyStr := arry[len(arry)-1]
 		if strings.EqualFold(keyStr, "description") {
 			response.Description = vals
+			ver, _ := strconv.Atoi(arry[5])
+			response.App = &arry[3]
+			response.Module = &arry[4]
+			response.Version = &ver
+			response.Config = &arry[7]
 			continue
 		} else {
 
@@ -124,6 +122,11 @@ func bindGetConfigResponse(response *getConfigResponse, queryParams GetConfigReq
 				Value: vals,
 			})
 		}
+		ver, _ := strconv.Atoi(arry[5])
+		response.App = &arry[3]
+		response.Module = &arry[4]
+		response.Version = &ver
+		response.Config = &arry[7]
 
 	}
 }
