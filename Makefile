@@ -1,4 +1,4 @@
-.PHONY: build-wsc-dev run-wsc-dev build-rigelctl build-docker
+.PHONY: build-wsc-dev run-wsc-dev build-rigelctl build-docker snapsho release
 
 build-wsc-dev:
 	mkdir -p out
@@ -22,3 +22,14 @@ BUILD_TAGS ?=
 #     make build-docker
 build-docker:
 	docker build --build-arg BUILD_TAGS=$(BUILD_TAGS) -t rigelwsc:latest .
+# Generates a pre-release build from the current commit. Useful for testing and development.
+# Artifacts will have a snapshot identifier, and the dist directory will be cleaned before the build.
+snapshot:
+	goreleaser release --snapshot --rm-dist
+
+# Prepares a release from a tagged commit without publishing it. 
+# This allows for manual inspection or testing of artifacts. 
+# The dist directory is cleaned before building.
+release:
+	goreleaser release --skip-publish --rm-dist
+
