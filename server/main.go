@@ -29,12 +29,20 @@ type AppConfig struct {
 
 func main() {
 
-	configFilePath := "config_dev.json"
+	configFilePath := "config_dev.json" // Default configuration file name
+
+	if len(os.Args) > 1 {
+		configFilePath = os.Args[1] // Override with provided argument
+	}
+
+	// configFilePath := "config_dev.json"
 	var appConfig AppConfig
 	err := config.LoadConfigFromFile(configFilePath, &appConfig)
 	if err != nil {
 		log.Fatalf("Error loading config: %v", err)
 	}
+
+	fmt.Printf("Config: %v", appConfig)
 
 	// Logger setup
 	logFile, err := os.OpenFile("log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -53,6 +61,7 @@ func main() {
 	defer file.Close()
 	// Load the error types
 	wscutils.LoadErrorTypes(file)
+
 	// Router
 	r := gin.Default()
 	// cordMiddleware() definition changes based on build flags

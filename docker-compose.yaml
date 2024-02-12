@@ -1,0 +1,23 @@
+version: '3'
+services:
+  etcd:
+    image: quay.io/coreos/etcd:v3.4.13
+    ports:
+      - "2379:2379"
+    command: /usr/local/bin/etcd -advertise-client-urls http://etcd:2379 -listen-client-urls http://0.0.0.0:2379
+
+  rigelwsc:
+    image: docker.io/ssd532/rigelwsc:latest
+    depends_on:
+      - etcd
+    volumes:
+      - ./server/config_dev.json:/root/config_dev.json
+    ports:
+      - "8090:8090"
+
+  rigelui:
+    image: docker.io/ssd532/rigelui:latest
+    ports:
+      - "8081:80"
+    depends_on:
+      - rigelwsc

@@ -17,6 +17,9 @@
 # Go workspace file
 go.work
 
+# release artifacts
+dist
+
 tmp
 bin
 

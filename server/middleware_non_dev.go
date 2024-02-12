@@ -11,5 +11,7 @@ import "github.com/gin-gonic/gin"
 // This middleware function is a no-op in production and it has to be a no-op.
 // Incorrect CORS headers can lead to security vulnerabilities.
 func corsMiddleware() gin.HandlerFunc {
-	return nil
+	return func(c *gin.Context) {
+		c.Next() // Continue to the next middleware/handler without modification.
+	}
 }

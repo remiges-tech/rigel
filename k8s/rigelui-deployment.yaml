@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rigelui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rigelui
+  template:
+    metadata:
+      labels:
+        app: rigelui
+    spec:
+      containers:
+      - name: rigelui
+        image: docker.io/ssd532/rigelui:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: RIGELWSC_URL
+          value: "http://rigelwsc:8090"
