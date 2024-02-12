@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rigelwsc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rigelwsc
+  template:
+    metadata:
+      labels:
+        app: rigelwsc
+    spec:
+      containers:
+      - name: rigelwsc
+        image: docker.io/ssd532/rigelwsc:latest
+        ports:
+        - containerPort: 8090
