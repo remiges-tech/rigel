@@ -28,7 +28,9 @@ func GetConfPath(appName string, moduleName string, version int, namedConfig str
 
 // GetConfKeyPath constructs the path for a configuration based on the provided appName, moduleName, version, namedConfig, and confKey.
 func GetConfKeyPath(appName string, moduleName string, version int, namedConfig string, confKey string) string {
-	return fmt.Sprintf("%s/%s/%s/%d/config/%s/%s", rigelPrefix, appName, moduleName, version, namedConfig, confKey)
+	// return fmt.Sprintf("%s/%s/%s/%d/config/%s/%s", rigelPrefix, appName, moduleName, version, namedConfig, confKey)
+	return fmt.Sprintf("/remiges/rigel/%s/%s/%d/config/%s/keys/%s", appName, moduleName, version, namedConfig, confKey)
+
 }
 
 func ValidateValueAgainstConstraints(value string, field *types.Field) bool {

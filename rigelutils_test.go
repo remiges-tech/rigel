@@ -88,7 +88,7 @@ func TestGetConfKeyPath(t *testing.T) {
 		confKey      string
 		expectedPath string
 	}{
-		{"testApp", "testModule", 1, "testConf", "testKey", "/remiges/rigel/testApp/testModule/1/config/testConf/testKey"},
+		{"testApp", "testModule", 1, "testConf", "testKey", "/remiges/rigel/testApp/testModule/1/config/testConf/keys/testKey"},
 	}
 
 	for _, tt := range tests {
