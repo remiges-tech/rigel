@@ -21,10 +21,10 @@ import (
 )
 
 type AppConfig struct {
-	DBConnUrl     string `json:"db_conn_url"`
-	DBHost        string `json:"db_host"`
-	DBPort        string `json:"db_port"`
+	EtcdHost      string `json:"etcd_host"`
+	EtcdPort      string `json:"etcd_port"`
 	AppServerPort string `json:"app_server_port"`
+	APIPrefix     string `json:"api_prefix"`
 }
 
 func main() {
@@ -70,7 +70,7 @@ func main() {
 	r.Use(corsMiddleware())
 
 	// Create a new EtcdStorage instance
-	etcdStorage, err := etcd.NewEtcdStorage([]string{fmt.Sprint(appConfig.DBHost + ":" + appConfig.DBPort)})
+	etcdStorage, err := etcd.NewEtcdStorage([]string{fmt.Sprint(appConfig.EtcdHost + ":" + appConfig.EtcdPort)})
 
 	if err != nil {
 		log.Fatalf("Failed to create EtcdStorage: %v", err)
@@ -108,7 +108,7 @@ func main() {
 
 	// routes
 
-	apiV1Group := r.Group("/api/v1/")
+	apiV1Group := r.Group(appConfig.APIPrefix)
 
 	// Config Services
 	s.RegisterRouteWithGroup(apiV1Group, http.MethodGet, "/configget", configsvc.Config_get)

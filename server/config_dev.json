@@ -1,6 +1,7 @@
 {
-    "db_conn_url": "host=localhost port=2379 sslmode=disable",
-    "db_host": "etcd",
-    "db_port": "2379",
-    "app_server_port": "8090"
+    "etcd_host": "etcd",
+    "etcd_port": "2379",
+    "app_server_port": "8090",
+    "api_prefix": "/api/v1"
 }
+
