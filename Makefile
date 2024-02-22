@@ -2,10 +2,10 @@
 
 build-wsc-dev:
 	mkdir -p out
-	cd server && go build -tags dev -o ../out/rigel-server.exe .
+	cd server && go build -tags dev -o ../out/rigel-server .
 
 run-wsc-dev: build-wsc-dev
-	./out/rigel-server.exe
+	cd server && ../out/rigel-server
 
 build-rigelctl:
 	mkdir -p out
