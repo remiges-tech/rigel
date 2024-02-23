@@ -32,6 +32,8 @@ func AddSchemaCommand(client *rigel.Rigel, cmd *cobra.Command, args []string) er
 		return fmt.Errorf("failed to parse schema: %v", err)
 	}
 
+	schema.Version = client.Version // TODO: addschema uses version from schema object, check if we can remove version field from schema
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	// Call AddSchema

@@ -36,7 +36,7 @@ func main() {
 			rigelClient := rigel.NewWithStorage(etcdStorage)
 
 			// Set the App and Module fields using the WithApp and WithModule methods
-			rigelClient = rigelClient.WithApp(app).WithModule(module)
+			rigelClient = rigelClient.WithApp(app).WithModule(module).WithVersion(version)
 
 			// Store the Rigel client pointer in the command's annotations for later retrieval
 			cmd.Annotations = make(map[string]string)
@@ -67,8 +67,8 @@ func main() {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Check if the required flags are provided
-			if app == "" || module == "" {
-				return fmt.Errorf("the 'app' and 'module' flags must be provided")
+			if app == "" || module == "" || version == 0 {
+				return fmt.Errorf("the 'app', 'module', and 'version' flags must be provided")
 			}
 
 			rigelClientPtr, _ := strconv.ParseUint(cmd.Annotations["rigelClient"], 0, 64)
