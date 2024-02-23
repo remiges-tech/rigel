@@ -7,16 +7,21 @@ services:
     command: /usr/local/bin/etcd -advertise-client-urls http://etcd:2379 -listen-client-urls http://0.0.0.0:2379
 
   rigelwsc:
-    image: docker.io/ssd532/rigelwsc:latest
+    image: rigelwsc:latest
     depends_on:
       - etcd
     volumes:
       - ./server/config_dev.json:/root/config_dev.json
     ports:
       - "8090:8090"
+    environment:
+      ETCD_HOST: etcd
+      ETCD_PORT: "2379"
+      APP_SERVER_PORT: "8090"
+      API_PREFIX: "/api/v1"
 
   rigelui:
-    image: docker.io/ssd532/rigelui:latest
+    image: rigelui:latest
     ports:
       - "8081:80"
     depends_on:

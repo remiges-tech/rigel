@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/remiges-tech/alya/config"
 	"github.com/remiges-tech/alya/service"
 	"github.com/remiges-tech/alya/wscutils"
 	"github.com/remiges-tech/logharbour/logharbour"
@@ -27,20 +26,27 @@ type AppConfig struct {
 	APIPrefix     string `json:"api_prefix"`
 }
 
+// LoadConfigFromEnv updates AppConfig with values from environment variables if they exist
+func LoadConfigFromEnv(appConfig *AppConfig) {
+	if etcdHost := os.Getenv("ETCD_HOST"); etcdHost != "" {
+		appConfig.EtcdHost = etcdHost
+	}
+	if etcdPort := os.Getenv("ETCD_PORT"); etcdPort != "" {
+		appConfig.EtcdPort = etcdPort
+	}
+	if appServerPort := os.Getenv("APP_SERVER_PORT"); appServerPort != "" {
+		appConfig.AppServerPort = appServerPort
+	}
+	if apiPrefix := os.Getenv("API_PREFIX"); apiPrefix != "" {
+		appConfig.APIPrefix = apiPrefix
+	}
+}
+
 func main() {
-
-	configFilePath := "config_dev.json" // Default configuration file name
-
-	if len(os.Args) > 1 {
-		configFilePath = os.Args[1] // Override with provided argument
-	}
-
-	// configFilePath := "config_dev.json"
 	var appConfig AppConfig
-	err := config.LoadConfigFromFile(configFilePath, &appConfig)
-	if err != nil {
-		log.Fatalf("Error loading config: %v", err)
-	}
+
+	// Override config with environment variables if they are set
+	LoadConfigFromEnv(&appConfig)
 
 	fmt.Printf("Config: %v", appConfig)
 
