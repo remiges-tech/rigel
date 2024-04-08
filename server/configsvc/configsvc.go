@@ -9,6 +9,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/remiges-tech/alya/service"
 	"github.com/remiges-tech/alya/wscutils"
+	"github.com/remiges-tech/rigel"
 	"github.com/remiges-tech/rigel/etcd"
 	"github.com/remiges-tech/rigel/server/trees"
 	"github.com/remiges-tech/rigel/server/utils"
@@ -23,6 +24,12 @@ type getConfigResponse struct {
 	Config      *string  `json:"config,omitempty"`
 	Description string   `json:"description,omitempty"`
 	Values      []values `json:"values,omitempty"`
+}
+
+type ConfigListReqParams struct {
+	App     string `form:"app"  binding:"required"`
+	Module  string `form:"module" binding:"required"`
+	Version int    `form:"ver" binding:"required"`
 }
 
 type GetConfigRequestParams struct {
@@ -55,9 +62,8 @@ func Config_get(c *gin.Context, s *service.Service) {
 		wscutils.SendErrorResponse(c, wscutils.NewResponse(wscutils.ErrorStatus, nil, []wscutils.ErrorMessage{wscutils.BuildErrorMessage(wscutils.ErrcodeInvalidJson, nil)}))
 		return
 	}
-
-	keyStr := utils.RIGELPREFIX + "/" + *queryParams.App + "/" + *queryParams.Module + "/" + strconv.Itoa(queryParams.Version) + "/config/" + *queryParams.Config
-
+	keyStr := rigel.GetConfPath(*queryParams.App, *queryParams.Module, queryParams.Version, *queryParams.Config)
+	// keyStr := utils.RIGELPREFIX + "/" + *queryParams.App + "/" + *queryParams.Module + "/" + strconv.Itoa(queryParams.Version) + "/config/" + *queryParams.Config
 	getValue, err := client.GetWithPrefix(c, keyStr)
 	if err != nil {
 		wscutils.SendErrorResponse(c, wscutils.NewResponse(wscutils.ErrorStatus, nil, []wscutils.ErrorMessage{wscutils.BuildErrorMessage(wscutils.ErrcodeMissing, nil, err.Error())}))
@@ -78,6 +84,14 @@ func Config_list(c *gin.Context, s *service.Service) {
 
 	// Extracting etcdStorage and rigelTree from service dependency.
 
+	var queryParams ConfigListReqParams
+	if err := c.ShouldBindQuery(&queryParams); err != nil {
+		fields := "app / module / ver"
+		lh.Error(err).Log("error unmarshalling query paramaeters to struct")
+		wscutils.SendErrorResponse(c, wscutils.NewResponse(wscutils.ErrorStatus, nil, []wscutils.ErrorMessage{wscutils.BuildErrorMessage(utils.ErrcodeMissingRequiredFields, nil, fields)}))
+		return
+	}
+
 	etcd, ok := s.Dependencies["etcd"].(*etcd.EtcdStorage)
 	if !ok {
 		field := "etcd"
@@ -97,8 +111,29 @@ func Config_list(c *gin.Context, s *service.Service) {
 	}
 
 	trees.Process(rTree, container)
+	response := bindConfigListResponse(container.ResponseData, queryParams)
 
-	wscutils.SendSuccessResponse(c, &wscutils.Response{Status: "success", Data: map[string]any{"configurations": container.ResponseData}, Messages: []wscutils.ErrorMessage{}})
+	wscutils.SendSuccessResponse(c, &wscutils.Response{Status: "success", Data: map[string]any{"configurations": response}, Messages: []wscutils.ErrorMessage{}})
+}
+
+// bindConfigListResponse is specifically used in configList to bing and set the response
+func bindConfigListResponse(container []any, queryParams ConfigListReqParams) []trees.GetConfigListResponse {
+	var response []trees.GetConfigListResponse
+	for _, v := range container {
+		a := v.(trees.GetConfigListResponse)
+		if a.App == queryParams.App && a.Module == queryParams.Module && a.Ver == queryParams.Version {
+			obj := trees.GetConfigListResponse{
+				App:    a.App,
+				Module: a.Module,
+				Ver:    a.Ver,
+				Config: a.Config,
+				// Description: a.Description,
+			}
+			response = append(response, obj)
+		}
+	}
+
+	return response
 }
 
 // bindGetConfigResponse is specifically used in Cinfig_get to bing and set the response
