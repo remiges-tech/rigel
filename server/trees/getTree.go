@@ -69,7 +69,7 @@ func workOnVersions(v *utils.Node, rTree *utils.Node, c *Container) {
 	}
 
 	c.version = vInt
-	configNodes := rTree.Ls(utils.RIGELPREFIX + "/" + c.appName + "/" + c.moduleName + "/" + vName + "/" + "fields")
+	configNodes := rTree.Ls(utils.RIGELPREFIX + "/" + c.appName + "/" + c.moduleName + "/" + vName + "/" + "config")
 
 	for _, conf := range configNodes {
 		workOnConfigs(conf, rTree, c)
