@@ -30,7 +30,7 @@ type GetConfigListResponse struct {
 	Module      string `json:"module"`
 	Ver         int    `json:"ver"`
 	Config      string `json:"config"`
-	Description string `json:"description"`
+	Description string `json:"description,omitempty"`
 }
 
 func Process(rTree *utils.Node, c *Container) {

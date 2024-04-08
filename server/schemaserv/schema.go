@@ -2,6 +2,7 @@ package schemaserv
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -174,13 +175,26 @@ func HandleGetSchemaListRequest(c *gin.Context, s *service.Service) {
 		wscutils.SendErrorResponse(c, wscutils.NewResponse(wscutils.ErrorStatus, nil, []wscutils.ErrorMessage{wscutils.BuildErrorMessage(utils.INVALID_DEPENDENCY, &field)}))
 		return
 	}
-	r := s.Dependencies["rTree"]
-	rTree, ok := r.(*utils.Node)
-	if !ok {
-		field := "rigelTree"
-		wscutils.SendErrorResponse(c, wscutils.NewResponse(wscutils.ErrorStatus, nil, []wscutils.ErrorMessage{wscutils.BuildErrorMessage(utils.INVALID_DEPENDENCY, &field)}))
+
+	// Get all keys from etcd
+	allkeys, err := etcd.GetWithPrefix(c, "/")
+	if err != nil {
+		log.Fatalf("etcd interaction failed: %v", err)
 		return
 	}
+	// Build a Rigel STree
+	rTree := utils.NewNode("")
+	for k, v := range allkeys {
+		rTree.AddPath(k, v)
+	}
+
+	// r := s.Dependencies["rTree"]
+	// rTree, ok := r.(*utils.Node)
+	// if !ok {
+	// 	field := "rigelTree"
+	// 	wscutils.SendErrorResponse(c, wscutils.NewResponse(wscutils.ErrorStatus, nil, []wscutils.ErrorMessage{wscutils.BuildErrorMessage(utils.INVALID_DEPENDENCY, &field)}))
+	// 	return
+	// }
 
 	container := &container{
 		etcd: etcd,
@@ -191,7 +205,7 @@ func HandleGetSchemaListRequest(c *gin.Context, s *service.Service) {
 	// Log the completion of execution
 	lh.Log("Finished execution of GetSchemaList")
 
-	wscutils.SendSuccessResponse(c, &wscutils.Response{Status: wscutils.SuccessStatus, Data: container.responseData, Messages: []wscutils.ErrorMessage{}})
+	wscutils.SendSuccessResponse(c, &wscutils.Response{Status: wscutils.SuccessStatus, Data: map[string]any{"schemas": container.responseData}, Messages: []wscutils.ErrorMessage{}})
 }
 
 // process generates the required data by working on rigel keys tree rTree

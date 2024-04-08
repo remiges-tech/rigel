@@ -32,6 +32,12 @@ type GetConfigRequestParams struct {
 	Config  *string `form:"config" binding:"required"`
 }
 
+type ConfigListReqParams struct {
+	App     string `form:"app"  binding:"required"`
+	Module  string `form:"module" binding:"required"`
+	Version int    `form:"ver" binding:"required"`
+}
+
 type values struct {
 	Name  string `json:"name,omitempty"`
 	Value string `json:"value,omitempty"`
@@ -56,7 +62,8 @@ func Config_get(c *gin.Context, s *service.Service) {
 		return
 	}
 
-	keyStr := utils.RIGELPREFIX + "/" + *queryParams.App + "/" + *queryParams.Module + "/" + strconv.Itoa(queryParams.Version) + "/fields/" + *queryParams.Config
+	// rigel.GetConfPath()
+	keyStr := utils.RIGELPREFIX + "/" + *queryParams.App + "/" + *queryParams.Module + "/" + strconv.Itoa(queryParams.Version) + "/config/" + *queryParams.Config
 	getValue, err := client.GetWithPrefix(c, keyStr)
 	if err != nil {
 		wscutils.SendErrorResponse(c, wscutils.NewResponse(wscutils.ErrorStatus, nil, []wscutils.ErrorMessage{wscutils.BuildErrorMessage(wscutils.ErrcodeMissing, nil, "no_record_found")}))
@@ -84,6 +91,15 @@ func Config_list(c *gin.Context, s *service.Service) {
 		wscutils.SendErrorResponse(c, wscutils.NewResponse(wscutils.ErrorStatus, nil, []wscutils.ErrorMessage{wscutils.BuildErrorMessage(utils.INVALID_DEPENDENCY, &field)}))
 		return
 	}
+
+	var queryParams ConfigListReqParams
+	if err := c.ShouldBindQuery(&queryParams); err != nil {
+		fields := "app / module / ver"
+		lh.Error(err).Log("error unmarshalling query paramaeters to struct")
+		wscutils.SendErrorResponse(c, wscutils.NewResponse(wscutils.ErrorStatus, nil, []wscutils.ErrorMessage{wscutils.BuildErrorMessage(utils.ErrcodeMissingRequiredFields, nil, fields)}))
+		return
+	}
+
 	r := s.Dependencies["rTree"]
 	rTree, ok := r.(*utils.Node)
 	if !ok {
@@ -98,7 +114,30 @@ func Config_list(c *gin.Context, s *service.Service) {
 
 	trees.Process(rTree, container)
 
-	wscutils.SendSuccessResponse(c, &wscutils.Response{Status: "success", Data: map[string]any{"configurations": container.ResponseData}, Messages: []wscutils.ErrorMessage{}})
+	// set response fields
+	response := bindConfigListResponse(container.ResponseData, queryParams)
+
+	wscutils.SendSuccessResponse(c, &wscutils.Response{Status: "success", Data: map[string]any{"configurations": response}, Messages: []wscutils.ErrorMessage{}})
+}
+
+// bindConfigListResponse is specifically used in configList to bing and set the response
+func bindConfigListResponse(container []any, queryParams ConfigListReqParams) []trees.GetConfigListResponse {
+	var response []trees.GetConfigListResponse
+	for _, v := range container {
+		a := v.(trees.GetConfigListResponse)
+		if a.App == queryParams.App && a.Module == queryParams.Module && a.Ver == queryParams.Version {
+			obj := trees.GetConfigListResponse{
+				App:    a.App,
+				Module: a.Module,
+				Ver:    a.Ver,
+				Config: a.Config,
+				// Description: a.Description,
+			}
+			response = append(response, obj)
+		}
+	}
+
+	return response
 }
 
 // bindGetConfigResponse is specifically used in Cinfig_get to bing and set the response

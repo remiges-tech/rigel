@@ -1,18 +1,18 @@
 package utils
 
 import (
-	
 	"strings"
 	"time"
 
 	"github.com/remiges-tech/alya/wscutils"
 )
 
-
 const (
 	DIALTIMEOUT        = 50 * time.Second
 	RIGELPREFIX        = "/remiges/rigel"
 	INVALID_DEPENDENCY = "invalid_dependency"
+
+	ErrcodeMissingRequiredFields = "missing_required_fields"
 )
 
 type Node struct {
