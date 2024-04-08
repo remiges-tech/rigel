@@ -1,18 +1,17 @@
 package utils
 
 import (
-	
 	"strings"
 	"time"
 
 	"github.com/remiges-tech/alya/wscutils"
 )
 
-
 const (
-	DIALTIMEOUT        = 50 * time.Second
-	RIGELPREFIX        = "/remiges/rigel"
-	INVALID_DEPENDENCY = "invalid_dependency"
+	DIALTIMEOUT                  = 50 * time.Second
+	RIGELPREFIX                  = "/remiges/rigel"
+	INVALID_DEPENDENCY           = "invalid_dependency"
+	ErrcodeMissingRequiredFields = "missing_required_fields"
 )
 
 type Node struct {
@@ -68,7 +67,8 @@ func (n *Node) AddPath(path string, val string) {
 
 func (n *Node) Ls(path string) []*Node {
 	var parts []string
-	// fmt.Printf("path inside ls: %v", path)
+	var nodes []*Node
+	// fmt.Printf("path inside ls: %v\n", path)
 	parts = strings.Split(path, "/")
 
 	current := n
@@ -79,14 +79,17 @@ func (n *Node) Ls(path string) []*Node {
 		}
 		child, exists := current.Children[part]
 		if !exists {
-			//fmt.Errorf("%v not valid child", part)
+			// fmt.Errorf("%v not valid child\n", part)
 			wscutils.NewErrorResponse(" Insvalid child")
+			return nodes
 		}
 		current = child
 	}
-	var nodes []*Node
+
 	for _, v := range current.Children {
-		nodes = append(nodes, v)
+		if !v.IsLeaf {
+			nodes = append(nodes, v)
+		}
 	}
 	return nodes
 }
