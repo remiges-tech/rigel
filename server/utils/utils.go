@@ -87,9 +87,7 @@ func (n *Node) Ls(path string) []*Node {
 	}
 
 	for _, v := range current.Children {
-		if !v.IsLeaf {
 			nodes = append(nodes, v)
-		}
 	}
 	return nodes
 }
