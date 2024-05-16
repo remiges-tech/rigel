@@ -28,7 +28,7 @@ snapshot:
 	goreleaser release --snapshot --rm-dist
 
 # Prepares a release from a tagged commit without publishing it. 
-# This allows for manual inspection or testing of artifacts. 
+# The binaries will be published to the Github release manually.
 # The dist directory is cleaned before building.
 release:
 	goreleaser release --skip-publish --rm-dist

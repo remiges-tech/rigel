@@ -13,4 +13,3 @@ builds:
       - windows
 archives:
   - format: tar.gz
-    # additional archive configuration if needed

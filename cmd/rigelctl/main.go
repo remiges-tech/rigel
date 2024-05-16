@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"os"
 	"strconv"
 	"strings"
 	"unsafe"
@@ -81,6 +81,7 @@ func main() {
 
 			return rigelctl.AddSchemaCommand(rigelClient, cmd, args)
 		},
+		SilenceUsage: true,
 	}
 	// Add the 'addSchema' command to the 'schema' command
 	schemaCmd.AddCommand(addSchemaCmd)
@@ -167,6 +168,6 @@ func main() {
 
 	// Execute the root command
 	if err := rootCmd.Execute(); err != nil {
-		log.Fatalf("Failed to execute root command: %v", err)
+		os.Exit(1)
 	}
 }

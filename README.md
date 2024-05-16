@@ -31,22 +31,27 @@ rigelctl --etcd-endpoint localhost:2379,localhost:2380,localhost:2390 --app bank
 
 ```
 {
-    "name": "banking_config",
     "fields": [
         {
             "name": "api_endpoint",
-            "type": "string"
+            "type": "string",
+            "description": "The URL endpoint for the banking API."
         },
         {
             "name": "max_transactions_per_day",
-            "type": "int"
+            "type": "int",
+            "description": "The maximum number of transactions allowed per day.",
+            "constraints": {
+                "min": 1
+            }
         },
         {
-            "name": "enable_fraud_detection",
-            "type": "bool"
+            "name": "enable_fraud_detection", 
+            "type": "bool",
+            "description": "Indicates whether fraud detection should be enabled."
         }
     ],
-    "description": "Configuration for the banking application"
+    "description": "Configuration schema for the banking application's transactions module."
 }
 ```
 
