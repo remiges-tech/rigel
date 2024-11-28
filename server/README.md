@@ -6,3 +6,5 @@ This server exposes web services for Rigel.
 
 Use `make run-dev` to run the server in development mode.
 
+## Add schema to etcd
+
