@@ -548,3 +548,271 @@ func ExampleRigel_LoadConfig() {
 	//// APIKey: abc123
 	//// IsDebug: false
 }
+
+func TestEnableDisableCaching(t *testing.T) {
+	// Create a mock storage
+	mockStorage := &mocks.MockStorage{}
+
+	// Create a new Rigel instance (caching is enabled by default)
+	r := New(mockStorage, "app", "module", 1, "config")
+
+	// Test that caching is enabled by default
+	if !r.IsCachingEnabled() {
+		t.Error("Expected caching to be enabled by default")
+	}
+
+	// Test DisableCaching
+	r.DisableCaching()
+	if r.IsCachingEnabled() {
+		t.Error("Expected caching to be disabled after DisableCaching()")
+	}
+
+	// Test EnableCaching
+	r.EnableCaching()
+	if !r.IsCachingEnabled() {
+		t.Error("Expected caching to be enabled after EnableCaching()")
+	}
+
+	// Test method chaining
+	r2 := New(mockStorage, "app", "module", 1, "config").DisableCaching()
+	if r2.IsCachingEnabled() {
+		t.Error("Expected caching to be disabled after chained DisableCaching()")
+	}
+
+	r3 := New(mockStorage, "app", "module", 1, "config").DisableCaching().EnableCaching()
+	if !r3.IsCachingEnabled() {
+		t.Error("Expected caching to be enabled after chained EnableCaching()")
+	}
+}
+
+func TestIsCachingEnabled(t *testing.T) {
+	// Create a mock storage
+	mockStorage := &mocks.MockStorage{}
+
+	// Create a new Rigel instance
+	r := New(mockStorage, "app", "module", 1, "config")
+
+	// Test IsCachingEnabled with default state
+	if !r.IsCachingEnabled() {
+		t.Error("Expected IsCachingEnabled() to return true by default")
+	}
+
+	// Test after disabling
+	r.DisableCaching()
+	if r.IsCachingEnabled() {
+		t.Error("Expected IsCachingEnabled() to return false after disabling")
+	}
+
+	// Test after enabling
+	r.EnableCaching()
+	if !r.IsCachingEnabled() {
+		t.Error("Expected IsCachingEnabled() to return true after enabling")
+	}
+}
+
+func TestGetWithCachingDisabled(t *testing.T) {
+	paramName := "testParam"
+	expectedValue := "testValue"
+	getCallCount := 0
+
+	// Create a mock storage that counts Get calls
+	mockStorage := &mocks.MockStorage{
+		GetFunc: func(ctx context.Context, key string) (string, error) {
+			switch key {
+			case GetSchemaFieldsPath("app", "module", 1):
+				return `[{"name": "testParam", "type": "string"}]`, nil
+			case GetConfKeyPath("app", "module", 1, "config", paramName):
+				getCallCount++
+				return expectedValue, nil
+			default:
+				return "", fmt.Errorf("unexpected key: %s", key)
+			}
+		},
+	}
+
+	// Create a new Rigel instance and disable caching
+	r := New(mockStorage, "app", "module", 1, "config").DisableCaching()
+
+	// First Get call
+	value1, err := r.Get(context.Background(), paramName)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if value1 != expectedValue {
+		t.Errorf("Expected '%s', got '%s'", expectedValue, value1)
+	}
+	if getCallCount != 1 {
+		t.Errorf("Expected 1 storage Get call, got %d", getCallCount)
+	}
+
+	// Second Get call - should hit storage again since caching is disabled
+	value2, err := r.Get(context.Background(), paramName)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if value2 != expectedValue {
+		t.Errorf("Expected '%s', got '%s'", expectedValue, value2)
+	}
+	if getCallCount != 2 {
+		t.Errorf("Expected 2 storage Get calls, got %d", getCallCount)
+	}
+
+	// Verify cache was not used
+	_, found := r.Cache.Get(GetConfKeyPath("app", "module", 1, "config", paramName))
+	if found {
+		t.Error("Expected value not to be in cache when caching is disabled")
+	}
+}
+
+func TestGetWithCachingEnabled(t *testing.T) {
+	paramName := "testParam"
+	expectedValue := "testValue"
+	getCallCount := 0
+
+	// Create a mock storage that counts Get calls
+	mockStorage := &mocks.MockStorage{
+		GetFunc: func(ctx context.Context, key string) (string, error) {
+			switch key {
+			case GetSchemaFieldsPath("app", "module", 1):
+				return `[{"name": "testParam", "type": "string"}]`, nil
+			case GetConfKeyPath("app", "module", 1, "config", paramName):
+				getCallCount++
+				return expectedValue, nil
+			default:
+				return "", fmt.Errorf("unexpected key: %s", key)
+			}
+		},
+	}
+
+	// Create a new Rigel instance (caching enabled by default)
+	r := New(mockStorage, "app", "module", 1, "config")
+
+	// First Get call
+	value1, err := r.Get(context.Background(), paramName)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if value1 != expectedValue {
+		t.Errorf("Expected '%s', got '%s'", expectedValue, value1)
+	}
+	if getCallCount != 1 {
+		t.Errorf("Expected 1 storage Get call, got %d", getCallCount)
+	}
+
+	// Second Get call - should hit cache
+	value2, err := r.Get(context.Background(), paramName)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if value2 != expectedValue {
+		t.Errorf("Expected '%s', got '%s'", expectedValue, value2)
+	}
+	if getCallCount != 1 {
+		t.Errorf("Expected still 1 storage Get call (cache hit), got %d", getCallCount)
+	}
+}
+
+func TestWatchConfigWithCachingEnabled(t *testing.T) {
+	// Create channels for testing
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Create a mock storage
+	mockStorage := &mocks.MockStorage{
+		WatchFunc: func(ctx context.Context, key string, ch chan<- types.Event) error {
+			// Simulate events in a goroutine
+			go func() {
+				// Test case 1: Update existing key in cache
+				existingKey := GetConfKeyPath("app", "module", 1, "config", "existing")
+				ch <- types.Event{
+					Key:   existingKey,
+					Value: "newValue",
+				}
+
+				// Give time for the first event to be processed
+				time.Sleep(20 * time.Millisecond)
+
+				// Test case 2: Add new key (not in cache) - should NOT be added (intentional behavior)
+				newKey := GetConfKeyPath("app", "module", 1, "config", "new")
+				ch <- types.Event{
+					Key:   newKey,
+					Value: "brandNewValue",
+				}
+			}()
+			return nil
+		},
+	}
+
+	// Create a new Rigel instance
+	r := New(mockStorage, "app", "module", 1, "config")
+
+	// Pre-populate cache with existing key
+	existingKey := GetConfKeyPath("app", "module", 1, "config", "existing")
+	r.Cache.Set(existingKey, "oldValue")
+
+	// Start watching
+	err := r.WatchConfig(ctx)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	// Give time for the events to be processed
+	time.Sleep(50 * time.Millisecond)
+
+	// Check if existing key was updated
+	value, found := r.Cache.Get(existingKey)
+	if !found {
+		t.Error("Expected existing key to still be in cache")
+	}
+	if value != "newValue" {
+		t.Errorf("Expected cache value to be 'newValue', got '%s'", value)
+	}
+
+	// Check that new key was NOT added to cache (intentional security behavior)
+	newKey := GetConfKeyPath("app", "module", 1, "config", "new")
+	_, found = r.Cache.Get(newKey)
+	if found {
+		t.Error("Expected new key NOT to be added to cache (only existing keys should be updated)")
+	}
+}
+
+func TestWatchConfigWithCachingDisabled(t *testing.T) {
+	// Create channels for testing
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Create a mock storage
+	mockStorage := &mocks.MockStorage{
+		WatchFunc: func(ctx context.Context, key string, ch chan<- types.Event) error {
+			// Simulate an event in a goroutine
+			go func() {
+				time.Sleep(10 * time.Millisecond)
+				testKey := GetConfKeyPath("app", "module", 1, "config", "test")
+				ch <- types.Event{
+					Key:   testKey,
+					Value: "testValue",
+				}
+			}()
+			return nil
+		},
+	}
+
+	// Create a new Rigel instance and disable caching
+	r := New(mockStorage, "app", "module", 1, "config").DisableCaching()
+
+	// Start watching
+	err := r.WatchConfig(ctx)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	// Give time for the event to be processed
+	time.Sleep(30 * time.Millisecond)
+
+	// Check that cache was not updated (caching is disabled)
+	testKey := GetConfKeyPath("app", "module", 1, "config", "test")
+	_, found := r.Cache.Get(testKey)
+	if found {
+		t.Error("Expected cache not to be updated when caching is disabled")
+	}
+}

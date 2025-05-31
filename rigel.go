@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strconv"
 	"sync"
+	"sync/atomic"
 
 	"github.com/remiges-tech/rigel/etcd"
 	"github.com/remiges-tech/rigel/types"
@@ -23,20 +24,22 @@ const (
 
 // Rigel represents a client for Rigel configuration manager server.
 type Rigel struct {
-	Storage types.Storage
-	Cache   types.Cache
-	App     string
-	Module  string
-	Version int
-	Config  string
-	mu      sync.Mutex
+	Storage      types.Storage
+	Cache        types.Cache
+	App          string
+	Module       string
+	Version      int
+	Config       string
+	cacheEnabled atomic.Bool
+	mu           sync.Mutex
 }
 
 // New creates a new instance of Rigel with the provided Storage interface.
 // The Storage interface is used by Rigel to interact with the underlying storage system.
 // Currently, only etcd is supported as a storage system.
+// By default, caching is enabled.
 func New(storage types.Storage, app string, module string, version int, config string) *Rigel {
-	return &Rigel{
+	r := &Rigel{
 		Storage: storage,
 		Cache:   NewInMemoryCache(),
 		App:     app,
@@ -44,6 +47,8 @@ func New(storage types.Storage, app string, module string, version int, config s
 		Version: version,
 		Config:  config,
 	}
+	r.cacheEnabled.Store(true)
+	return r
 }
 
 // NewWithStorage creates a new instance of Rigel with the provided Storage interface.
@@ -53,11 +58,14 @@ func New(storage types.Storage, app string, module string, version int, config s
 // adding a new schema definition. Once Rigel object is constructed using NewWithStorage other
 // required params for admin tasks are supposed to be added using the with-prefixed functions like
 // WithApp, WithModule, etc.
+// By default, caching is enabled.
 func NewWithStorage(storage types.Storage) *Rigel {
-	return &Rigel{
+	r := &Rigel{
 		Storage: storage,
 		Cache:   NewInMemoryCache(),
 	}
+	r.cacheEnabled.Store(true)
+	return r
 }
 
 // WithApp sets the App field of the Rigel struct and returns the modified Rigel object.
@@ -96,16 +104,42 @@ func (r *Rigel) WithConfig(config string) *Rigel {
 	return r
 }
 
+// EnableCaching enables the use of the cache for Get operations and etcd watches.
+// When enabled, values are cached locally for faster access, and the cache is updated
+// when changes occur in etcd (if WatchConfig is called).
+func (r *Rigel) EnableCaching() *Rigel {
+	r.cacheEnabled.Store(true)
+	return r
+}
+
+// DisableCaching disables the use of the cache for Get operations.
+// When disabled, all Get operations fetch values directly from etcd,
+// bypassing the local cache entirely. This ensures values are always fresh
+// from etcd but may impact performance with increased network calls.
+func (r *Rigel) DisableCaching() *Rigel {
+	r.cacheEnabled.Store(false)
+	return r
+}
+
+// IsCachingEnabled returns whether caching is currently enabled for this Rigel instance.
+func (r *Rigel) IsCachingEnabled() bool {
+	return r.cacheEnabled.Load()
+}
+
 // Default creates a new instance of Rigel with a default EtcdStorage instance.
+// By default, caching is enabled.
 func Default() (*Rigel, error) {
 	etcdStorage, err := etcd.NewEtcdStorage([]string{"localhost:2379"})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create default EtcdStorage: %w", err)
 	}
 
-	return &Rigel{
+	r := &Rigel{
 		Storage: etcdStorage,
-	}, nil
+		Cache:   NewInMemoryCache(),
+	}
+	r.cacheEnabled.Store(true)
+	return r, nil
 }
 
 // KeyExistsInSchema checks if a key exists in the schema.
@@ -337,7 +371,8 @@ func (e *KeyNotFoundError) Error() string {
 // Get retrieves a value from the storage based on the provided key.
 // It converts the retrieved value to the correct type based on the field type.
 // If the field type is not "int" or "bool", the value is assumed to be a string.
-// get retrieves a value from the cache or storage and returns it as a string.
+// If caching is enabled, it tries to get the value from the cache first, otherwise
+// it retrieves it directly from the storage.
 func (r *Rigel) Get(ctx context.Context, configKey string) (string, error) {
 	// Check if the key exists in the schema
 	exists, err := r.KeyExistsInSchema(ctx, configKey)
@@ -351,20 +386,24 @@ func (r *Rigel) Get(ctx context.Context, configKey string) (string, error) {
 	// Construct the key for the parameter
 	key := GetConfKeyPath(r.App, r.Module, r.Version, r.Config, configKey)
 
-	// Try to get the value from the cache
-	value, found := r.Cache.Get(key)
-	if found {
-		return value, nil
+	// Try to get the value from the cache if caching is enabled
+	if r.cacheEnabled.Load() {
+		value, found := r.Cache.Get(key)
+		if found {
+			return value, nil
+		}
 	}
 
-	// If the value is not in the cache, retrieve it from the storage
+	// If the value is not in the cache or caching is disabled, retrieve it from the storage
 	valueStr, err := r.Storage.Get(ctx, key)
 	if err != nil {
 		return "", &KeyNotFoundError{Key: key}
 	}
 
-	// Store the value in the cache
-	r.Cache.Set(key, valueStr)
+	// Store the value in the cache if caching is enabled
+	if r.cacheEnabled.Load() {
+		r.Cache.Set(key, valueStr)
+	}
 
 	return valueStr, nil
 }
@@ -440,9 +479,12 @@ func convertToType(valueStr string, fieldType string) (interface{}, error) {
 }
 
 // WatchConfig starts watching for changes to any key in the specified configuration namespace in the storage.
-// When a change is detected, it updates the corresponding key-value pair in the cache.
+// When a change is detected, it updates the corresponding key-value pair in the cache if caching is enabled.
 // The method takes the schemaName, schemaVersion, and configName
 // to construct the base key for the configuration namespace.
+// Note: When caching is disabled, events are still received but not cached.
+// Security: Only keys that already exist in the cache are updated. New keys are not added to prevent
+// cache pollution and ensure the cache only contains keys the application actually uses.
 func (r *Rigel) WatchConfig(ctx context.Context) error {
 	// Construct the base key for the configuration
 	baseKey := GetConfPath(r.App, r.Module, r.Version, r.Config)
@@ -454,9 +496,12 @@ func (r *Rigel) WatchConfig(ctx context.Context) error {
 
 	go func() {
 		for event := range events {
-			// Only update keys in the cache that have changed
-			if _, found := r.Cache.Get(event.Key); found {
-				r.Cache.Set(event.Key, event.Value)
+			// Only update the cache if caching is enabled
+			if r.cacheEnabled.Load() {
+				// Only update keys in the cache that have changed
+				if _, found := r.Cache.Get(event.Key); found {
+					r.Cache.Set(event.Key, event.Value)
+				}
 			}
 		}
 	}()
