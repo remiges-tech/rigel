@@ -32,6 +32,8 @@ type Rigel struct {
 	Config       string
 	cacheEnabled atomic.Bool
 	mu           sync.Mutex
+	schemaCache  []types.Field
+	schemaLoaded atomic.Bool
 }
 
 // New creates a new instance of Rigel with the provided Storage interface.
@@ -116,14 +118,27 @@ func (r *Rigel) EnableCaching() *Rigel {
 // When disabled, all Get operations fetch values directly from etcd,
 // bypassing the local cache entirely. This ensures values are always fresh
 // from etcd but may impact performance with increased network calls.
+// This also clears the schema cache to ensure fresh schema lookups.
 func (r *Rigel) DisableCaching() *Rigel {
 	r.cacheEnabled.Store(false)
+	// Clear schema cache flag atomically
+	r.schemaLoaded.Store(false)
 	return r
 }
 
 // IsCachingEnabled returns whether caching is currently enabled for this Rigel instance.
 func (r *Rigel) IsCachingEnabled() bool {
 	return r.cacheEnabled.Load()
+}
+
+// InvalidateSchemaCache clears the cached schema fields, forcing a fresh
+// load from storage on the next access. This is useful when schema changes
+// are made and need to be reflected immediately.
+func (r *Rigel) InvalidateSchemaCache() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.schemaLoaded.Store(false)
+	r.schemaCache = nil
 }
 
 // Default creates a new instance of Rigel with a default EtcdStorage instance.
@@ -275,11 +290,24 @@ func (r *Rigel) AddSchema(ctx context.Context, schema types.Schema) error {
 		}
 	}
 
+	// Invalidate schema cache when a new schema is added
+	r.InvalidateSchemaCache()
+
 	return nil
 }
 
 // getSchemaFields retrieves the schema fields
 func (r *Rigel) getSchemaFields(ctx context.Context) ([]types.Field, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	// Check schema cache first if caching is enabled
+	// Note: We check cacheEnabled first to ensure DisableCaching() bypasses schema cache
+	if r.cacheEnabled.Load() && r.schemaLoaded.Load() {
+		return r.schemaCache, nil
+	}
+
+	// Load from etcd
 	schemaFieldsKey := GetSchemaFieldsPath(r.App, r.Module, r.Version)
 
 	fieldsStr, err := r.Storage.Get(ctx, schemaFieldsKey)
@@ -291,6 +319,12 @@ func (r *Rigel) getSchemaFields(ctx context.Context) ([]types.Field, error) {
 	err = json.Unmarshal([]byte(fieldsStr), &fields)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal fields: %w", err)
+	}
+
+	// Cache the schema if caching is enabled
+	if r.cacheEnabled.Load() {
+		r.schemaCache = fields
+		r.schemaLoaded.Store(true)
 	}
 
 	return fields, nil
