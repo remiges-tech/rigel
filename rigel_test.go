@@ -943,6 +943,135 @@ func TestSet_ValidJSON(t *testing.T) {
 	}
 }
 
+func TestGetJSON(t *testing.T) {
+	type FeatureFlags struct {
+		EnableSignup     bool `json:"enableSignup"`
+		EnableOAuth      bool `json:"enableOAuth"`
+		MaxLoginAttempts int  `json:"maxLoginAttempts"`
+	}
+
+	t.Run("valid JSON unmarshals to struct", func(t *testing.T) {
+		mockStorage := &mocks.MockStorage{
+			GetFunc: func(ctx context.Context, key string) (string, error) {
+				if key == GetSchemaFieldsPath("app", "module", 1) {
+					return `[{"name": "feature.flags", "type": "json", "description": "Feature flags"}]`, nil
+				}
+				if key == GetConfKeyPath("app", "module", 1, "config", "feature.flags") {
+					return `{"enableSignup": true, "enableOAuth": false, "maxLoginAttempts": 5}`, nil
+				}
+				return "", fmt.Errorf("unexpected key: %s", key)
+			},
+		}
+
+		rigelClient := New(mockStorage, "app", "module", 1, "config")
+
+		flags, err := GetJSON[FeatureFlags](rigelClient, context.Background(), "feature.flags")
+		assert.NoError(t, err)
+		assert.Equal(t, true, flags.EnableSignup)
+		assert.Equal(t, false, flags.EnableOAuth)
+		assert.Equal(t, 5, flags.MaxLoginAttempts)
+	})
+
+	t.Run("extra fields in JSON are ignored", func(t *testing.T) {
+		mockStorage := &mocks.MockStorage{
+			GetFunc: func(ctx context.Context, key string) (string, error) {
+				if key == GetSchemaFieldsPath("app", "module", 1) {
+					return `[{"name": "feature.flags", "type": "json", "description": "Feature flags"}]`, nil
+				}
+				if key == GetConfKeyPath("app", "module", 1, "config", "feature.flags") {
+					return `{"enableSignup": true, "extraField": "ignored", "maxLoginAttempts": 3}`, nil
+				}
+				return "", fmt.Errorf("unexpected key: %s", key)
+			},
+		}
+
+		rigelClient := New(mockStorage, "app", "module", 1, "config")
+
+		flags, err := GetJSON[FeatureFlags](rigelClient, context.Background(), "feature.flags")
+		assert.NoError(t, err)
+		assert.Equal(t, true, flags.EnableSignup)
+		assert.Equal(t, 3, flags.MaxLoginAttempts)
+	})
+
+	t.Run("invalid JSON returns unmarshal error", func(t *testing.T) {
+		mockStorage := &mocks.MockStorage{
+			GetFunc: func(ctx context.Context, key string) (string, error) {
+				if key == GetSchemaFieldsPath("app", "module", 1) {
+					return `[{"name": "feature.flags", "type": "json", "description": "Feature flags"}]`, nil
+				}
+				if key == GetConfKeyPath("app", "module", 1, "config", "feature.flags") {
+					return `{invalid json}`, nil
+				}
+				return "", fmt.Errorf("unexpected key: %s", key)
+			},
+		}
+
+		rigelClient := New(mockStorage, "app", "module", 1, "config")
+
+		_, err := GetJSON[FeatureFlags](rigelClient, context.Background(), "feature.flags")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to unmarshal JSON")
+	})
+
+	t.Run("non-existent key returns error", func(t *testing.T) {
+		mockStorage := &mocks.MockStorage{
+			GetFunc: func(ctx context.Context, key string) (string, error) {
+				if key == GetSchemaFieldsPath("app", "module", 1) {
+					return `[{"name": "other.key", "type": "json", "description": "Other key"}]`, nil
+				}
+				return "", &KeyNotFoundError{Key: key}
+			},
+		}
+
+		rigelClient := New(mockStorage, "app", "module", 1, "config")
+
+		_, err := GetJSON[FeatureFlags](rigelClient, context.Background(), "feature.flags")
+		assert.Error(t, err)
+	})
+
+	t.Run("works with slice type", func(t *testing.T) {
+		mockStorage := &mocks.MockStorage{
+			GetFunc: func(ctx context.Context, key string) (string, error) {
+				if key == GetSchemaFieldsPath("app", "module", 1) {
+					return `[{"name": "allowed.ips", "type": "json", "description": "Allowed IPs"}]`, nil
+				}
+				if key == GetConfKeyPath("app", "module", 1, "config", "allowed.ips") {
+					return `["192.168.1.1", "10.0.0.1", "172.16.0.1"]`, nil
+				}
+				return "", fmt.Errorf("unexpected key: %s", key)
+			},
+		}
+
+		rigelClient := New(mockStorage, "app", "module", 1, "config")
+
+		ips, err := GetJSON[[]string](rigelClient, context.Background(), "allowed.ips")
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"192.168.1.1", "10.0.0.1", "172.16.0.1"}, ips)
+	})
+
+	t.Run("works with map type", func(t *testing.T) {
+		mockStorage := &mocks.MockStorage{
+			GetFunc: func(ctx context.Context, key string) (string, error) {
+				if key == GetSchemaFieldsPath("app", "module", 1) {
+					return `[{"name": "rate.limits", "type": "json", "description": "Rate limits"}]`, nil
+				}
+				if key == GetConfKeyPath("app", "module", 1, "config", "rate.limits") {
+					return `{"api": 100, "web": 500, "admin": 1000}`, nil
+				}
+				return "", fmt.Errorf("unexpected key: %s", key)
+			},
+		}
+
+		rigelClient := New(mockStorage, "app", "module", 1, "config")
+
+		limits, err := GetJSON[map[string]int](rigelClient, context.Background(), "rate.limits")
+		assert.NoError(t, err)
+		assert.Equal(t, 100, limits["api"])
+		assert.Equal(t, 500, limits["web"])
+		assert.Equal(t, 1000, limits["admin"])
+	})
+}
+
 func ExampleRigel_LoadConfig() {
 	//// Create a new EtcdStorage instance
 	//etcdStorage, err := etcd.NewEtcdStorage([]string{"localhost:2379"})
@@ -1243,6 +1372,176 @@ func TestWatchConfigWithCachingDisabled(t *testing.T) {
 	if found {
 		t.Error("Expected cache not to be updated when caching is disabled")
 	}
+}
+
+func TestGetJSON_Caching(t *testing.T) {
+	type FeatureFlags struct {
+		EnableSignup     bool `json:"enableSignup"`
+		MaxLoginAttempts int  `json:"maxLoginAttempts"`
+	}
+
+	t.Run("returns cached parsed object when value unchanged", func(t *testing.T) {
+		parseCount := 0
+		jsonValue := `{"enableSignup": true, "maxLoginAttempts": 5}`
+
+		mockStorage := &mocks.MockStorage{
+			GetFunc: func(ctx context.Context, key string) (string, error) {
+				if key == GetSchemaFieldsPath("app", "module", 1) {
+					return `[{"name": "feature.flags", "type": "json"}]`, nil
+				}
+				if key == GetConfKeyPath("app", "module", 1, "config", "feature.flags") {
+					return jsonValue, nil
+				}
+				return "", fmt.Errorf("unexpected key: %s", key)
+			},
+		}
+
+		rigelClient := New(mockStorage, "app", "module", 1, "config")
+		ctx := context.Background()
+
+		// First call - should parse
+		flags1, err := GetJSON[FeatureFlags](rigelClient, ctx, "feature.flags")
+		assert.NoError(t, err)
+		assert.Equal(t, true, flags1.EnableSignup)
+
+		// Second call - should return cached
+		flags2, err := GetJSON[FeatureFlags](rigelClient, ctx, "feature.flags")
+		assert.NoError(t, err)
+		assert.Equal(t, true, flags2.EnableSignup)
+
+		// Verify we got cached result by checking internal state
+		rigelClient.parsedCacheMu.RLock()
+		cacheKey := GetConfKeyPath("app", "module", 1, "config", "feature.flags")
+		entry, ok := rigelClient.parsedCache[cacheKey]
+		rigelClient.parsedCacheMu.RUnlock()
+
+		assert.True(t, ok, "parsed cache should have entry")
+		assert.Equal(t, jsonValue, entry.rawValue)
+		_ = parseCount // parseCount tracking would require instrumenting json.Unmarshal
+	})
+
+	t.Run("re-parses when underlying value changes", func(t *testing.T) {
+		callCount := 0
+		mockStorage := &mocks.MockStorage{
+			GetFunc: func(ctx context.Context, key string) (string, error) {
+				if key == GetSchemaFieldsPath("app", "module", 1) {
+					return `[{"name": "feature.flags", "type": "json"}]`, nil
+				}
+				if key == GetConfKeyPath("app", "module", 1, "config", "feature.flags") {
+					callCount++
+					if callCount == 1 {
+						return `{"enableSignup": true, "maxLoginAttempts": 5}`, nil
+					}
+					return `{"enableSignup": false, "maxLoginAttempts": 10}`, nil
+				}
+				return "", fmt.Errorf("unexpected key: %s", key)
+			},
+		}
+
+		rigelClient := New(mockStorage, "app", "module", 1, "config")
+		ctx := context.Background()
+
+		// First call
+		flags1, err := GetJSON[FeatureFlags](rigelClient, ctx, "feature.flags")
+		assert.NoError(t, err)
+		assert.Equal(t, true, flags1.EnableSignup)
+		assert.Equal(t, 5, flags1.MaxLoginAttempts)
+
+		// Simulate cache miss by clearing string cache
+		rigelClient.Cache.Delete(GetConfKeyPath("app", "module", 1, "config", "feature.flags"))
+
+		// Second call - value changed
+		flags2, err := GetJSON[FeatureFlags](rigelClient, ctx, "feature.flags")
+		assert.NoError(t, err)
+		assert.Equal(t, false, flags2.EnableSignup)
+		assert.Equal(t, 10, flags2.MaxLoginAttempts)
+	})
+
+	t.Run("caches parsed objects even with DisableCaching", func(t *testing.T) {
+		jsonValue := `{"enableSignup": true, "maxLoginAttempts": 5}`
+		mockStorage := &mocks.MockStorage{
+			GetFunc: func(ctx context.Context, key string) (string, error) {
+				if key == GetSchemaFieldsPath("app", "module", 1) {
+					return `[{"name": "feature.flags", "type": "json"}]`, nil
+				}
+				if key == GetConfKeyPath("app", "module", 1, "config", "feature.flags") {
+					return jsonValue, nil
+				}
+				return "", fmt.Errorf("unexpected key: %s", key)
+			},
+		}
+
+		rigelClient := New(mockStorage, "app", "module", 1, "config").DisableCaching()
+		ctx := context.Background()
+
+		// Call GetJSON
+		flags, err := GetJSON[FeatureFlags](rigelClient, ctx, "feature.flags")
+		assert.NoError(t, err)
+		assert.Equal(t, true, flags.EnableSignup)
+
+		// Parsed cache should still be populated (independent of string cache setting)
+		rigelClient.parsedCacheMu.RLock()
+		cacheKey := GetConfKeyPath("app", "module", 1, "config", "feature.flags")
+		entry, ok := rigelClient.parsedCache[cacheKey]
+		rigelClient.parsedCacheMu.RUnlock()
+
+		assert.True(t, ok, "parsed cache should have entry even with DisableCaching")
+		assert.Equal(t, jsonValue, entry.rawValue)
+	})
+
+	t.Run("concurrent access is safe", func(t *testing.T) {
+		mockStorage := &mocks.MockStorage{
+			GetFunc: func(ctx context.Context, key string) (string, error) {
+				if key == GetSchemaFieldsPath("app", "module", 1) {
+					return `[{"name": "feature.flags", "type": "json"}]`, nil
+				}
+				if key == GetConfKeyPath("app", "module", 1, "config", "feature.flags") {
+					time.Sleep(5 * time.Millisecond)
+					return `{"enableSignup": true, "maxLoginAttempts": 5}`, nil
+				}
+				return "", fmt.Errorf("unexpected key: %s", key)
+			},
+		}
+
+		rigelClient := New(mockStorage, "app", "module", 1, "config")
+		ctx := context.Background()
+
+		var wg sync.WaitGroup
+		concurrentRequests := 50
+		results := make(chan FeatureFlags, concurrentRequests)
+		errors := make(chan error, concurrentRequests)
+
+		for i := 0; i < concurrentRequests; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				flags, err := GetJSON[FeatureFlags](rigelClient, ctx, "feature.flags")
+				if err != nil {
+					errors <- err
+					return
+				}
+				results <- flags
+			}()
+		}
+
+		wg.Wait()
+		close(results)
+		close(errors)
+
+		// Check for errors
+		for err := range errors {
+			t.Errorf("Unexpected error in concurrent access: %v", err)
+		}
+
+		// Verify all results are correct
+		resultCount := 0
+		for flags := range results {
+			resultCount++
+			assert.Equal(t, true, flags.EnableSignup)
+			assert.Equal(t, 5, flags.MaxLoginAttempts)
+		}
+		assert.Equal(t, concurrentRequests, resultCount)
+	})
 }
 
 func TestConvertToType(t *testing.T) {

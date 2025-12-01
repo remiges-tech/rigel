@@ -22,18 +22,25 @@ const (
 	defaultEtcdEndpoints = "localhost:2379"
 )
 
+type parsedCacheEntry struct {
+	rawValue string
+	parsed   interface{}
+}
+
 // Rigel represents a client for Rigel configuration manager server.
 type Rigel struct {
-	Storage      types.Storage
-	Cache        types.Cache
-	App          string
-	Module       string
-	Version      int
-	Config       string
-	cacheEnabled atomic.Bool
-	mu           sync.Mutex
-	schemaCache  []types.Field
-	schemaLoaded atomic.Bool
+	Storage       types.Storage
+	Cache         types.Cache
+	App           string
+	Module        string
+	Version       int
+	Config        string
+	cacheEnabled  atomic.Bool
+	mu            sync.Mutex
+	schemaCache   []types.Field
+	schemaLoaded  atomic.Bool
+	parsedCache   map[string]parsedCacheEntry
+	parsedCacheMu sync.RWMutex
 }
 
 // New creates a new instance of Rigel with the provided Storage interface.
@@ -484,6 +491,45 @@ func (r *Rigel) GetString(ctx context.Context, configKey string) (string, error)
 		return "", err
 	}
 	return valueStr, nil
+}
+
+// GetJSON retrieves a JSON configuration value and unmarshals it into the specified type.
+// This is a package-level function because Go does not allow type parameters on methods
+// of non-generic types. Parsed objects are always cached to avoid re-parsing identical JSON.
+// This cache is independent of IsCachingEnabled() because it uses string comparison to
+// detect staleness - if the underlying JSON string changes, we re-parse.
+func GetJSON[T any](r *Rigel, ctx context.Context, configKey string) (T, error) {
+	var zero T
+
+	jsonStr, err := r.Get(ctx, configKey)
+	if err != nil {
+		return zero, err
+	}
+
+	cacheKey := GetConfKeyPath(r.App, r.Module, r.Version, r.Config, configKey)
+
+	r.parsedCacheMu.RLock()
+	if entry, ok := r.parsedCache[cacheKey]; ok && entry.rawValue == jsonStr {
+		if result, ok := entry.parsed.(T); ok {
+			r.parsedCacheMu.RUnlock()
+			return result, nil
+		}
+	}
+	r.parsedCacheMu.RUnlock()
+
+	var result T
+	if err := json.Unmarshal([]byte(jsonStr), &result); err != nil {
+		return zero, fmt.Errorf("failed to unmarshal JSON for key %q: %w", configKey, err)
+	}
+
+	r.parsedCacheMu.Lock()
+	if r.parsedCache == nil {
+		r.parsedCache = make(map[string]parsedCacheEntry)
+	}
+	r.parsedCache[cacheKey] = parsedCacheEntry{rawValue: jsonStr, parsed: result}
+	r.parsedCacheMu.Unlock()
+
+	return result, nil
 }
 
 // convertToType converts a string value to the specified type.
