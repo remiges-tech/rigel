@@ -77,6 +77,11 @@
       "constraints": {
         "min": 1
       }
+    },
+    {
+      "name": "feature.flags",
+      "type": "json",
+      "description": "Feature flags for the service"
     }
   ],
   "description": "Configuration schema for the User Service example in Alya framework"

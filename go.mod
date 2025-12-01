@@ -5,6 +5,7 @@ go 1.21.3
 require (
 	github.com/go-playground/validator/v10 v10.16.0
 	github.com/spf13/cobra v1.8.0
+	github.com/stretchr/testify v1.8.4
 	github.com/xeipuuv/gojsonschema v1.2.0
 	go.etcd.io/etcd/client/v3 v3.5.10
 	go.etcd.io/etcd/tests/v3 v3.5.10
@@ -38,6 +39,7 @@ require (
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/pierrec/lz4/v4 v4.1.19 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect

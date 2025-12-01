@@ -11,6 +11,7 @@ import (
 	"github.com/remiges-tech/rigel/etcd"
 	"github.com/remiges-tech/rigel/mocks"
 	"github.com/remiges-tech/rigel/types"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewRigelClient(t *testing.T) {
@@ -864,6 +865,84 @@ func TestSet_Success(t *testing.T) {
 	}
 }
 
+func TestSet_InvalidJSON(t *testing.T) {
+	mockStorage := &mocks.MockStorage{
+		GetFunc: func(ctx context.Context, key string) (string, error) {
+			if key == GetSchemaFieldsPath("app", "module", 1) {
+				return `[{"name": "config", "type": "json", "description": "JSON config"}]`, nil
+			}
+			return "", fmt.Errorf("unexpected key: %s", key)
+		},
+		PutFunc: func(ctx context.Context, key string, value string) error {
+			assert.Fail(t, "Put should not be called for invalid JSON")
+			return nil
+		},
+	}
+
+	rigelClient := New(mockStorage, "app", "module", 1, "config")
+
+	tests := []struct {
+		name  string
+		value string
+	}{
+		{"unquoted keys", `{invalid: json}`},
+		{"trailing comma", `{"key": "value",}`},
+		{"plain text", `not json at all`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := rigelClient.Set(context.Background(), "config", tt.value)
+			assert.EqualError(t, err, "value does not meet the constraints of the field")
+		})
+	}
+}
+
+func TestSet_ValidJSON(t *testing.T) {
+	putCalled := false
+	mockStorage := &mocks.MockStorage{
+		GetFunc: func(ctx context.Context, key string) (string, error) {
+			if key == GetSchemaFieldsPath("app", "module", 1) {
+				return `[{"name": "config", "type": "json", "description": "JSON config"}]`, nil
+			}
+			return "", fmt.Errorf("unexpected key: %s", key)
+		},
+		PutFunc: func(ctx context.Context, key string, value string) error {
+			putCalled = true
+			return nil
+		},
+	}
+
+	mockCache := &mocks.MockCache{
+		SetFunc: func(key string, value string) {},
+	}
+
+	rigelClient := New(mockStorage, "app", "module", 1, "config")
+	rigelClient.Cache = mockCache
+
+	tests := []struct {
+		name  string
+		value string
+	}{
+		{"object", `{"key": "value"}`},
+		{"array", `[1, 2, 3]`},
+		{"nested", `{"users": [{"name": "alice"}], "config": {"timeout": 30}}`},
+		{"string", `"hello"`},
+		{"number", `42`},
+		{"boolean", `true`},
+		{"null", `null`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			putCalled = false
+			err := rigelClient.Set(context.Background(), "config", tt.value)
+			assert.NoError(t, err)
+			assert.True(t, putCalled, "Put should be called for valid JSON")
+		})
+	}
+}
+
 func ExampleRigel_LoadConfig() {
 	//// Create a new EtcdStorage instance
 	//etcdStorage, err := etcd.NewEtcdStorage([]string{"localhost:2379"})
@@ -1163,5 +1242,126 @@ func TestWatchConfigWithCachingDisabled(t *testing.T) {
 	_, found := r.Cache.Get(testKey)
 	if found {
 		t.Error("Expected cache not to be updated when caching is disabled")
+	}
+}
+
+func TestConvertToType(t *testing.T) {
+	tests := []struct {
+		name      string
+		valueStr  string
+		fieldType string
+		want      interface{}
+		wantErr   bool
+	}{
+		{
+			name:      "valid json object",
+			valueStr:  `{"key": "value"}`,
+			fieldType: "json",
+			want:      `{"key": "value"}`,
+			wantErr:   false,
+		},
+		{
+			name:      "valid json array",
+			valueStr:  `[1, 2, 3]`,
+			fieldType: "json",
+			want:      `[1, 2, 3]`,
+			wantErr:   false,
+		},
+		{
+			name:      "valid nested json with object and array",
+			valueStr:  `{"users": [{"name": "alice", "roles": ["admin", "user"]}, {"name": "bob", "roles": ["user"]}], "config": {"timeout": 30, "retries": 3}}`,
+			fieldType: "json",
+			want:      `{"users": [{"name": "alice", "roles": ["admin", "user"]}, {"name": "bob", "roles": ["user"]}], "config": {"timeout": 30, "retries": 3}}`,
+			wantErr:   false,
+		},
+		{
+			name:      "valid json string",
+			valueStr:  `"hello"`,
+			fieldType: "json",
+			want:      `"hello"`,
+			wantErr:   false,
+		},
+		{
+			name:      "valid json number",
+			valueStr:  `42`,
+			fieldType: "json",
+			want:      `42`,
+			wantErr:   false,
+		},
+		{
+			name:      "valid json boolean",
+			valueStr:  `true`,
+			fieldType: "json",
+			want:      `true`,
+			wantErr:   false,
+		},
+		{
+			name:      "valid json null",
+			valueStr:  `null`,
+			fieldType: "json",
+			want:      `null`,
+			wantErr:   false,
+		},
+		{
+			name:      "invalid json - missing quotes",
+			valueStr:  `{key: value}`,
+			fieldType: "json",
+			want:      nil,
+			wantErr:   true,
+		},
+		{
+			name:      "invalid json - trailing comma",
+			valueStr:  `{"key": "value",}`,
+			fieldType: "json",
+			want:      nil,
+			wantErr:   true,
+		},
+		{
+			name:      "invalid json - plain text",
+			valueStr:  `not json at all`,
+			fieldType: "json",
+			want:      nil,
+			wantErr:   true,
+		},
+		{
+			name:      "int type still works",
+			valueStr:  "123",
+			fieldType: "int",
+			want:      123,
+			wantErr:   false,
+		},
+		{
+			name:      "bool type still works",
+			valueStr:  "true",
+			fieldType: "bool",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "float type still works",
+			valueStr:  "3.14",
+			fieldType: "float",
+			want:      3.14,
+			wantErr:   false,
+		},
+		{
+			name:      "string type still works",
+			valueStr:  "hello",
+			fieldType: "string",
+			want:      "hello",
+			wantErr:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := convertToType(tt.valueStr, tt.fieldType)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
 	}
 }

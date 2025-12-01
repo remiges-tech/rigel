@@ -63,4 +63,7 @@ set_config "validation.username.minLength" "3"
 set_config "validation.username.maxLength" "30"
 set_config "validation.email.maxLength" "100"
 
+# Feature flags (JSON type)
+set_config "feature.flags" '{"enableSignup": true, "enableOAuth": false, "maxLoginAttempts": 5}'
+
 echo "Configuration setup complete!"

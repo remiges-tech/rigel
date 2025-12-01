@@ -33,7 +33,7 @@ type Constraints struct {
 	Enum []string `json:"enum,omitempty"`
 }
 
-// Field represents a single field in a schema. Currently, the only supported types are string, int, and bool.
+// Field represents a single field in a schema.
 //
 // Example:
 //
@@ -43,7 +43,7 @@ type Constraints struct {
 //	}
 type Field struct {
 	Name        string       `json:"name"` // Name represents the name of the field (config parameter).
-	Type        string       `json:"type"` // Type represents the type of the field. Currently, the supported types are "string", "int", and "bool".
+	Type        string       `json:"type"` // Type represents the type of the field. Supported types: "string", "int", "float", "bool", "json".
 	Description string       `json:"description"`
 	Constraints *Constraints `json:"constraints"`
 }

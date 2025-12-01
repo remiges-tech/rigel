@@ -14,7 +14,7 @@ const RigelSchemaJSON = `{
           },
           "type": {
             "type": "string",
-            "enum": ["int", "float", "string", "bool"]
+            "enum": ["int", "float", "string", "bool", "json"]
           },
           "description": {
             "type": "string"

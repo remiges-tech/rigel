@@ -51,4 +51,11 @@ func main() {
 		log.Printf("Failed to get server port: %v", err)
 	}
 	fmt.Printf("Server Port: %s\n", serverPort)
+
+	// Feature flags (JSON type)
+	featureFlags, err := rigelClient.Get(ctx, "feature.flags")
+	if err != nil {
+		log.Printf("Failed to get feature flags: %v", err)
+	}
+	fmt.Printf("Feature Flags (JSON): %s\n", featureFlags)
 }

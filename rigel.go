@@ -507,6 +507,11 @@ func convertToType(valueStr string, fieldType string) (interface{}, error) {
 			return nil, fmt.Errorf("failed to convert value to float: %w", err)
 		}
 		return floatValue, nil
+	case "json":
+		if !json.Valid([]byte(valueStr)) {
+			return nil, fmt.Errorf("failed to validate json: invalid JSON")
+		}
+		return valueStr, nil
 	default: // "string"
 		return valueStr, nil
 	}
